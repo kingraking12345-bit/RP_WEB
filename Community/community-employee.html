@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <script src="../index/rp-config.js"></script><script src="../index/rp-backend.js"></script><script src="../index/rp-site-loader.js"></script>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Community Moderation | RP</title>
+  <link rel="stylesheet" href="community-employee.css">
+<link rel="stylesheet" href="../index/rp-ui.css"><script src="../index/rp-ui.js"></script></head>
+<body>
+  <header class="ed-topbar"><a class="ed-brand" href="../index/index.html">RAKING <span>COMMUNITY</span></a><a href="community.html">Community page</a></header>
+  <main class="ed-main">
+    <div class="ed-alert"><strong>MODERATION WORKSPACE</strong><span>Everything here is live. Actions apply immediately, notify the member, and are written to the audit log.</span></div>
+    <div class="ed-title"><div><p class="ed-eyebrow">RP COMMUNITY</p><h1>Moderation</h1></div><div class="ed-status-wrap"><button type="button" class="ed-chip" id="accChip">Checking sign-in…</button><span id="topMsg" role="status"></span></div></div>
+    <div class="ed-note" id="gate" hidden></div>
+    <div id="app" hidden>
+    <nav class="ed-tabs" aria-label="Moderation pages">
+      <button type="button" class="active" data-view="overview" aria-selected="true">Overview</button>
+      <button type="button" data-view="reports" aria-selected="false">Reports <span id="repCount"></span></button>
+      <button type="button" data-view="content" aria-selected="false">Content</button>
+      <button type="button" data-view="members" aria-selected="false">Members</button>
+      <button type="button" data-view="rules" aria-selected="false">Rules</button>
+      <button type="button" data-view="log" aria-selected="false">Activity log</button>
+      <button type="button" data-view="tutorial" aria-selected="false">Tutorial</button>
+    </nav>
+
+    <section id="v-overview" class="ed-view active">
+      <div class="ed-head"><div><h2>Overview</h2><p>The last 24 hours in Community.</p></div><button type="button" id="ovRefresh">Refresh</button></div>
+      <div class="ed-tiles" id="ovTiles"></div>
+      <div class="ed-card"><h3>Currently restricted members</h3><div class="ed-list" id="ovRestricted"></div></div>
+    </section>
+
+    <section id="v-reports" class="ed-view" hidden>
+      <div class="ed-head"><div><h2>Reports</h2><p>Review what members reported. Remove content, warn, mute or ban, or dismiss the report.</p></div>
+        <div class="ed-actions"><select id="repStatus" aria-label="Report status"><option value="open">Open</option><option value="handled">Handled</option></select><button type="button" id="repRefresh">Refresh</button></div></div>
+      <div class="ed-list" id="repList"></div>
+    </section>
+
+    <section id="v-content" class="ed-view" hidden>
+      <div class="ed-head"><div><h2>Content</h2><p>Search posts or comments, remove rule-breaking content, restore mistakes, and pin up to 3 important posts.</p></div></div>
+      <form class="ed-form" id="ctForm">
+        <label>Search text or username<input id="ctQuery" maxlength="60" placeholder="e.g. spam link or a username"></label>
+        <label>Type<select id="ctType"><option value="post">Posts</option><option value="comment">Comments</option></select></label>
+        <label>Show<select id="ctRemoved"><option value="false">Visible</option><option value="true">Removed</option></select></label>
+        <div class="ed-actions"><button class="ed-primary" type="submit">Search</button></div>
+      </form>
+      <div class="ed-list" id="ctList"></div>
+    </section>
+
+    <section id="v-members" class="ed-view" hidden>
+      <div class="ed-head"><div><h2>Members</h2><p>Look up a member to see their history, then warn, mute or ban them. Muted members can read but not post or comment.</p></div></div>
+      <form class="ed-form" id="mbForm"><label class="wide">Username<input id="mbName" maxlength="40" placeholder="exact username" required></label><div class="ed-actions"><button class="ed-primary" type="submit">Look up</button></div></form>
+      <div id="mbResult"></div>
+    </section>
+
+    <section id="v-rules" class="ed-view" hidden>
+      <div class="ed-head"><div><h2>Rules</h2><p>Community-wide settings and the blocked word list.</p></div></div>
+      <form class="ed-form" id="ruForm">
+        <label>Slow mode (seconds between posts, 0 = off)<input id="ruSlow" type="number" min="0" max="3600" step="1" value="0"></label>
+        <label class="ed-inline"><input type="checkbox" id="ruRead"> Read-only mode (members cannot post, comment or edit; staff can)</label>
+        <label class="ed-inline"><input type="checkbox" id="ruImages"> Allow image links in posts</label>
+        <label class="wide">Announcement banner (empty = none)<input id="ruAnn" maxlength="300" placeholder="e.g. Maintenance tonight at 9 PM"></label>
+        <div class="ed-actions wide"><button class="ed-primary" type="submit">Save settings</button></div>
+        <p class="ed-msg wide" id="ruMsg" role="status"></p>
+      </form>
+      <div class="ed-card"><h3>Blocked words</h3><p class="ed-muted">Posts, comments and bios containing a blocked word (whole word, any capitalisation) are rejected. Staff are exempt.</p>
+        <form class="ed-actions" id="wdForm"><input id="wdWord" maxlength="40" placeholder="Add a word" style="flex:1;min-width:160px"><button class="ed-primary" type="submit">Add</button></form>
+        <div class="ed-list" id="wdList" style="margin-top:10px"></div></div>
+    </section>
+
+    <section id="v-log" class="ed-view" hidden>
+      <div class="ed-head"><div><h2>Activity log</h2><p>The last 100 moderation actions by every moderator.</p></div><button type="button" id="logRefresh">Refresh</button></div>
+      <div class="ed-list" id="logList"></div>
+    </section>
+
+    <section id="v-tutorial" class="ed-view" hidden>
+      <div class="ed-head"><div><h2>Moderation tutorial</h2><p>How to keep Community safe and fair.</p></div></div>
+      <div class="ed-tutorial">
+        <h3>1. Start with Reports</h3>
+        <ol><li>Open <strong>Reports</strong>. Each card shows the reported content, who reported it, and how many other people reported the same thing.</li>
+          <li><strong>Remove</strong> deletes the content for everyone and tells the author. <strong>Warn</strong> sends a message without removing anything. <strong>Mute</strong> (hours) lets the member read but not post. <strong>Ban</strong> removes posting for the number of hours you enter, or permanently if left empty. <strong>Dismiss</strong> closes a report that does not break the rules.</li></ol>
+        <h3>2. Find content yourself</h3>
+        <ol><li>Use <strong>Content</strong> to search recent posts and comments. You can restore anything removed by mistake, and <strong>pin</strong> up to 3 posts such as rules or news.</li></ol>
+        <h3>3. Members</h3>
+        <ol><li>Look up a username to see their post history, reports against them, and past notices. Tick <strong>Also remove all their posts and comments</strong> when banning a spammer.</li>
+          <li>Only the Creator can restrict other staff members.</li></ol>
+        <h3>4. Rules</h3>
+        <ol><li><strong>Slow mode</strong> limits how often each member can post. <strong>Read-only mode</strong> is an emergency brake. The <strong>announcement</strong> appears at the top of Community for everyone.</li>
+          <li>Add <strong>blocked words</strong> to reject messages automatically.</li></ol>
+        <h3>5. Accountability</h3>
+        <ol><li>Every action is recorded in the <strong>Activity log</strong> with your username. Members are notified when content is removed or they are restricted.</li></ol>
+      </div>
+    </section>
+    </div>
+    <footer class="ed-footer">Moderation needs a Community employee account. Actions cannot be done by regular members.</footer>
+  </main>
+  <script src="community-employee.js"></script>
+<script src="../index/kit-bar.js" defer></script>
+</body>
+</html>

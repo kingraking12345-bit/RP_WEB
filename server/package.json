@@ -1,0 +1,17 @@
+{
+  "name": "rp-api",
+  "version": "1.0.0",
+  "private": true,
+  "description": "RAKING PRODUCTIONS API: sits between the website and PostgreSQL (accounts, sign-in, database functions, public reads).",
+  "main": "src/index.js",
+  "engines": { "node": ">=20.6" },
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "node --env-file=.env --watch src/index.js",
+    "migrate": "node --env-file=.env migrate.js",
+    "test": "node --env-file=.env --test test/*.test.js"
+  },
+  "dependencies": {
+    "pg": "^8.13.1"
+  }
+}

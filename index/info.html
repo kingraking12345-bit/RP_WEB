@@ -1,0 +1,43 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><script src="rp-config.js"></script><script src="rp-backend.js"></script><script src="rp-site-loader.js"></script><title>RP Policy, About and Contact</title><link rel="stylesheet" href="kit.css"><link rel="stylesheet" href="rp-ui.css"><script src="rp-ui.js"></script></head>
+<body><main class="k-wrap" id="app" aria-live="polite"><p class="k-muted">Loading…</p></main>
+<script src="kit-lib.js"></script>
+<script>
+(async()=>{
+await RPK.ready;
+const {sb,esc,md,safeUrl,params,BRANCHES}=RPK, P=params(), kind=["policy","about","contact"].includes(P.kind)?P.kind:"policy", branch=BRANCHES[P.branch]?P.branch:"rp";
+RPK.topbar(kind); const app=document.getElementById("app");
+const FONTS={system:"system-ui,sans-serif",serif:"Georgia,'Times New Roman',serif",mono:"Consolas,monospace",rounded:"'Trebuchet MS','Segoe UI',sans-serif",display:"Impact,'Arial Black',sans-serif"};
+const sel='<label>Branch<select id="br">'+Object.entries(BRANCHES).map(([k,v])=>'<option value="'+k+'"'+(k===branch?' selected':'')+'>'+esc(v)+'</option>').join("")+'</select></label>';
+const {data,error}=await sb.from("rp_pages").select("id,title,sort,data,branch").eq("kind",kind).in("branch",branch==="rp"?["rp"]:["rp",branch]).order("sort").order("id");
+const head=(t,s)=>'<h1>'+t+'</h1><p class="k-muted">'+s+'</p>'+sel;
+const wire=()=>{document.getElementById("br").onchange=e=>{location.search="?kind="+kind+"&branch="+e.target.value}};
+if(error){app.innerHTML=head("Unavailable","This page could not be loaded: "+esc(error.message))+"";wire();return}
+const rows=data||[];
+if(kind==="policy"){
+  document.title="Policy — "+BRANCHES[branch];
+  app.innerHTML=head("Policy",esc(BRANCHES[branch])+" policies. Select a title to read it.")+(rows.length?'<div class="k-split"><div class="k-side" id="side"></div><article class="k-card" id="body"></article></div>':'<div class="k-card">No policies have been published yet.</div>');wire();
+  if(rows.length){const side=document.getElementById("side"),body=document.getElementById("body");
+    const show=i=>{[...side.children].forEach((b,j)=>b.classList.toggle("on",i===j));body.innerHTML='<h2 style="margin-top:0">'+esc(rows[i].title)+'</h2>'+md(rows[i].data.body);history.replaceState(null,"","#p"+rows[i].id)};
+    rows.forEach((r,i)=>{const b=document.createElement("button");b.type="button";b.innerHTML=esc(r.title)+(r.branch!=="rp"?' <span class="k-badge">'+esc(BRANCHES[r.branch])+'</span>':"");b.onclick=()=>show(i);side.append(b)});
+    const want=rows.findIndex(r=>"#p"+r.id===location.hash);show(want>=0?want:0);}
+}else if(kind==="about"){
+  const r=rows.filter(x=>x.branch===branch).pop()||rows.filter(x=>x.branch==="rp").pop();
+  document.title="About — "+BRANCHES[branch];
+  app.innerHTML=head("About",esc(BRANCHES[branch]))+(r?'<article class="k-card" id="ab"></article>':'<div class="k-card">The About page has not been written yet.</div>');wire();
+  if(r){const d=r.data,ab=document.getElementById("ab");ab.style.fontFamily=FONTS[d.font]||FONTS.system;ab.style.setProperty("--accent",/^#[0-9a-f]{6}$/i.test(d.accent||"")?d.accent:"#2ee6e6");
+    ab.innerHTML='<h2 style="margin-top:0;color:var(--accent);font-size:2rem">'+esc(r.title)+'</h2>'+(d.blocks||[]).map(b=>{
+      if(b.type==="heading")return'<h2 style="color:var(--accent)">'+esc(b.text)+'</h2>';
+      if(b.type==="sub")return'<h3>'+esc(b.text)+'</h3>';
+      if(b.type==="text")return md(b.text);
+      if(b.type==="image"&&safeUrl(b.url))return'<figure style="margin:16px 0"><img alt="'+esc(b.alt||"")+'" src="'+esc(b.url)+'" style="max-width:100%;border-radius:12px"></figure>';
+      if(b.type==="canva"&&/^https:\/\/www\.canva\.com\/design\//.test(b.url||""))return'<div style="position:relative;padding-top:56.25%;margin:16px 0;border-radius:12px;overflow:hidden"><iframe loading="lazy" title="'+esc(b.alt||"Canva design")+'" style="position:absolute;inset:0;width:100%;height:100%;border:0" src="'+esc(b.url)+(b.url.includes("embed")?"":(b.url.includes("?")?"&":"?")+"embed")+'" allowfullscreen sandbox="allow-scripts allow-same-origin allow-popups"></iframe></div>';
+      return"";}).join("")}
+}else{
+  const r=rows.filter(x=>x.branch===branch).pop()||rows.filter(x=>x.branch==="rp").pop(); document.title="Contact — "+BRANCHES[branch];
+  const ents=r?r.data.entries||[]:[];
+  app.innerHTML=head("Contact Us",esc(BRANCHES[branch])+" — reach the right person for each role.")+(ents.length?'<div class="k-grid">'+ents.map(e=>{
+    const soc=(e.socials||[]).filter(s=>safeUrl(s.url)).map(s=>'<a class="k-pill" target="_blank" rel="noopener noreferrer" href="'+esc(s.url)+'">'+esc(s.label||new URL(s.url).hostname)+'</a>').join(" ");
+    return'<div class="k-card"><h3 style="margin-top:0">'+esc(e.role)+'</h3>'+(e.name?'<p>'+esc(e.name)+'</p>':"")+(e.email?'<p>✉️ <a href="mailto:'+esc(e.email)+'">'+esc(e.email)+'</a></p>':"")+(e.phone?'<p>📞 <a href="tel:'+esc(String(e.phone).replace(/[^0-9+]/g,""))+'">'+esc(e.phone)+'</a></p>':"")+(soc?'<div class="k-row">'+soc+'</div>':"")+'</div>'}).join("")+'</div>':'<div class="k-card">No contacts have been added yet.</div>');wire();
+}
+})();
+</script><script src="kit-bar.js" defer></script></body></html>

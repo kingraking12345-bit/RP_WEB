@@ -1,0 +1,33 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><script src="rp-config.js"></script><script src="rp-backend.js"></script><script src="rp-site-loader.js"></script><title>Branch — RP</title><link rel="stylesheet" href="kit.css"><link rel="stylesheet" href="rp-ui.css"><script src="rp-ui.js"></script>
+<style>.bc{display:flex;gap:6px;flex-wrap:wrap;font-size:.86rem;color:var(--muted);margin:0 0 14px}.bc a{color:var(--muted);text-decoration:none}.bc a:hover{color:var(--text)}
+.bh{display:flex;gap:16px;align-items:center;margin:0 0 8px}.bh .ic{width:64px;height:64px;border-radius:var(--radius);background:var(--accent-soft);display:grid;place-items:center;font-size:2rem;border:1px solid var(--border)}
+.bh h1{margin:0;font-size:clamp(1.6rem,4vw,2.3rem)}.bl{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0 22px}.bl a{padding:9px 16px;border-radius:var(--radius-sm);border:1px solid var(--border);color:var(--text);text-decoration:none;font-weight:600;font-size:.9rem;background:var(--panel)}
+.bl a.p{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}.sub{display:grid;gap:14px;grid-template-columns:repeat(auto-fill,minmax(250px,1fr))}
+.sc{display:block;background:var(--panel);border:1px solid var(--border);border-top:3px solid var(--sc,var(--accent));border-radius:var(--radius);padding:16px;color:var(--text);text-decoration:none;transition:transform .15s,border-color .15s}.sc:hover{transform:translateY(-3px);border-color:var(--sc,var(--accent))}
+.sc b{display:block;margin:6px 0 4px}.sc span.t{font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}</style></head>
+<body><main class="k-wrap" id="app"><p class="k-muted">Loading…</p></main>
+<script src="kit-lib.js"></script>
+<script>
+(async()=>{
+const {sb,esc,md,params}=RPK, app=document.getElementById("app"), slug=(params().b||"").toLowerCase();
+RPK.topbar("");
+const {data,error}=await sb.from("rp_branches").select("*").order("sort");
+if(error){app.innerHTML='<div class="k-card">This branch could not be loaded: '+esc(error.message)+'</div>';return}
+const all=data||[], by=Object.fromEntries(all.map(b=>[b.slug,b])), cur=by[slug];
+if(!cur){app.innerHTML='<div class="k-card"><h1>Branch not found</h1><p class="k-muted">It may have been renamed, turned off or removed.</p><a href="index.html#rpBranches">All branches</a></div>';return}
+const trail=[];for(let c=cur,n=0;c&&n<8;n++,c=c.parent?by[c.parent]:null)trail.unshift(c);
+const root=trail[0].slug, q=slug!==root?"&branch="+slug:"&branch="+root;
+document.title=cur.name+" — RP";
+const kids=all.filter(b=>b.parent===slug).sort((a,b)=>a.sort-b.sort||a.name.localeCompare(b.name));
+const href=b=>{const has=all.some(x=>x.parent===b.slug);return (!has&&!b.content&&b.link)?b.link:"branch.html?b="+encodeURIComponent(b.slug)};
+const th=b=>{const r=RPBranchUI.resolve(b.slug).theme;return r.accent||""};
+let h='<div class="bc"><a href="index.html">RP</a>'+trail.map((b,i)=>'<span>/</span>'+(i<trail.length-1?'<a href="branch.html?b='+esc(b.slug)+'">'+esc(b.name)+'</a>':'<b style="color:var(--text)">'+esc(b.name)+'</b>')).join("")+'</div>';
+h+='<div class="bh"><div class="ic">'+esc(cur.icon||"📁")+'</div><div><h1>'+esc(cur.name)+'</h1>'+(cur.tagline?'<span class="k-badge">'+esc(cur.tagline)+'</span>':"")+'</div></div>';
+if(cur.description)h+='<p style="max-width:70ch;color:var(--muted)">'+esc(cur.description)+'</p>';
+h+='<div class="bl">'+(cur.link?'<a class="p" href="'+esc(cur.link)+'">Open '+esc(cur.name)+' →</a>':"")+(cur.applications_open?'<a href="apply.html?branch='+esc(slug)+'">I want to apply</a>':"")+'<a href="info.html?kind=about&branch='+esc(slug)+'">About</a><a href="info.html?kind=policy&branch='+esc(slug)+'">Policy</a><a href="info.html?kind=contact&branch='+esc(slug)+'">Contact</a></div>';
+if(cur.content)h+='<article class="k-card">'+md(cur.content)+'</article>';
+if(kids.length)h+='<h2>'+(trail.length===1?"Sub-branches":"Branches of "+esc(cur.name))+'</h2><div class="sub">'+kids.map(b=>'<a class="sc" style="--sc:'+esc(th(b)||"")+'" href="'+esc(href(b))+'"><span class="t">'+esc(b.tagline||"Branch")+'</span><div style="font-size:1.6rem">'+esc(b.icon||"📁")+'</div><b>'+esc(b.name)+'</b><span class="k-muted" style="font-size:.88rem">'+esc(b.description||"")+'</span></a>').join("")+'</div>';
+else if(!cur.content&&!cur.link)h+='<div class="k-card k-muted">Nothing here yet.</div>';
+app.innerHTML=h;
+})();
+</script></body></html>

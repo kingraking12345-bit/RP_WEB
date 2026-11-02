@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <script src="../index/rp-config.js"></script><script src="../index/rp-backend.js"></script><script src="../index/rp-site-loader.js"></script>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Tools Employee Workspace | RP</title>
+  <link rel="stylesheet" href="tools-employee.css">
+  <link rel="stylesheet" href="kignity-studio.css">
+<link rel="stylesheet" href="../index/rp-ui.css"><script src="../index/rp-ui.js"></script></head>
+<body>
+  <header class="te-topbar"><a class="te-brand" href="../index/index.html">RP <span>TOOLS</span></a><a href="tools.html">Tools library</a></header>
+  <main class="te-main">
+    <div class="te-alert"><strong>EMPLOYEE PREVIEW</strong><span>Drafts are stored in this browser. Use the Publish tab to send finished tools, announcements and Kignity AI to everyone on every device.</span></div>
+    <div class="te-title"><div><p class="te-eyebrow">TOOLS BRANCH</p><h1>Employee workspace</h1></div><div class="te-status-wrap"><button type="button" class="pro-chip" id="tePubChip" title="Open the Publish tab">Checking live site…</button><span id="teStatus" role="status">Local draft storage</span></div></div>
+    <nav class="te-tabs" aria-label="Tools employee pages">
+      <button type="button" class="active" data-view="kignity" aria-selected="true">Kignity AI</button>
+      <button type="button" data-view="tools" aria-selected="false">Tools</button>
+      <button type="button" data-view="events" aria-selected="false">Tool announcements</button>
+      <button type="button" data-view="publish" class="te-publish-tab" aria-selected="false">Publish</button>
+      <button type="button" data-view="tutorial" aria-selected="false">Tutorial</button>
+    </nav>
+    <section id="teKignity" class="te-view active" aria-label="Kignity AI studio">
+      <div class="kg-head-row"><div><h2>Kignity AI</h2><p>The main assistant of the Tools branch. It answers using the scripts you write here.</p></div><button type="button" class="te-create-tool" id="teNewToolFromKignity">＋ Create new tool</button></div>
+      <p class="te-intro"><strong>Kignity AI code</strong> Create folders and scripts for this AI. Choose the script type, write the code in the editor, and the AI runs on your scripts straight away: try it in the test chat below. Use the controls beside the editor to download, export or reset the project.</p>
+      <div id="kgStudio"></div>
+    </section>
+    <section id="teBuilder" class="te-view" hidden>
+      <form id="teForm" class="te-meta">
+        <input id="teToolId" type="hidden">
+        <label>Tool name<input id="teName" maxlength="64" required placeholder="e.g. Study Timer"></label>
+        <label>Refane price<input id="tePrice" type="number" min="0" max="1000000" step="1" value="0"><small>Informational only; checkout is not enabled.</small></label>
+        <label class="te-wide">Description<textarea id="teDescription" maxlength="400" rows="2" placeholder="What does this tool help someone do?"></textarea></label>
+      </form>
+      <div class="kg-head-row"><div><h2>Tools</h2><p>Build tools for the Tools Library.</p></div><button type="button" class="te-create-tool" id="teNewToolTop">＋ Create new tool</button></div>
+      <p class="te-intro"><strong>Tool code</strong> Create folders and scripts for this tool. Open <strong>Code</strong>, then write the HTML, CSS and JavaScript in the files beside the editor. The tool is built from those files when you save the draft.</p>
+      <div class="te-mode-switch" role="tablist" aria-label="Tool editor mode">
+        <button type="button" class="active" data-mode="design" role="tab" aria-selected="true">Design</button>
+        <button type="button" data-mode="code" role="tab" aria-selected="false">Code</button>
+      </div>
+      <div id="teDesignWorkspace" class="te-workspace">
+        <aside class="te-pane te-palette">
+          <div class="te-pane-head"><strong>Elements</strong><span>Drag to canvas</span></div>
+          <div class="te-palette-list" id="tePalette">
+            <button type="button" draggable="true" data-kind="heading"><b>T</b><span>Heading</span></button>
+            <button type="button" draggable="true" data-kind="text"><b>¶</b><span>Text</span></button>
+            <button type="button" draggable="true" data-kind="button"><b>▭</b><span>Button</span></button>
+            <button type="button" draggable="true" data-kind="input"><b>⌨</b><span>Text input</span></button>
+            <button type="button" draggable="true" data-kind="output"><b>▤</b><span>Result display</span></button>
+            <button type="button" draggable="true" data-kind="divider"><b>—</b><span>Divider</span></button>
+          </div>
+          <p class="te-hint">Select an element to change its text, colors, and size. Drag items in the canvas to reorder them.</p>
+        </aside>
+        <section class="te-pane te-canvas-pane">
+          <div class="te-pane-head"><strong>Tool canvas</strong><span id="teCanvasHint">Drop elements here</span></div>
+          <div id="teCanvas" class="te-canvas" aria-label="Tool preview canvas"></div>
+        </section>
+        <aside class="te-pane te-properties">
+          <div class="te-pane-head"><strong>Properties</strong><button type="button" id="teDeleteElement" class="te-icon-button" title="Delete selected element" aria-label="Delete selected element">×</button></div>
+          <p id="teNoSelection" class="te-empty">Select an element on the canvas to edit it.</p>
+          <div id="tePropertyFields" hidden>
+            <label>Text or label<input id="tePropText" maxlength="120"></label>
+            <label>Button message<input id="tePropMessage" maxlength="180"></label>
+            <label>Text color<input id="tePropColor" type="color" value="#17232a"></label>
+            <label>Background<input id="tePropBackground" type="color" value="#e9f2ef"></label>
+            <label>Font size <output id="teFontSizeValue">18 px</output><input id="tePropFontSize" type="range" min="12" max="40" value="18"></label>
+          </div>
+        </aside>
+      </div>
+      <section id="teCodeWorkspace" class="te-code-workspace" hidden aria-label="Tool source code editor">
+        <aside class="te-code-explorer">
+          <div class="te-pane-head"><strong>Project</strong><span>NEW TOOL</span></div>
+          <div class="te-file-create">
+            <label>Folder name<input id="teFolderName" maxlength="48" placeholder="e.g. components"></label>
+            <button type="button" id="teCreateFolder">Create folder</button>
+            <label>File name<input id="teFileName" maxlength="48" placeholder="e.g. main"></label>
+            <label>Language
+              <select id="teFileType">
+                <option value="html">HTML (.html)</option><option value="js">JavaScript (.js)</option><option value="ts">TypeScript (.ts)</option><option value="py">Python (.py)</option><option value="css">CSS (.css)</option><option value="json">JSON (.json)</option><option value="java">Java (.java)</option><option value="c">C (.c)</option><option value="cpp">C++ (.cpp)</option><option value="cs">C# (.cs)</option><option value="go">Go (.go)</option><option value="rs">Rust (.rs)</option><option value="php">PHP (.php)</option><option value="rb">Ruby (.rb)</option><option value="sh">Shell (.sh)</option><option value="swift">Swift (.swift)</option><option value="kt">Kotlin (.kt)</option><option value="lua">Lua (.lua)</option><option value="sql">SQL (.sql)</option><option value="md">Markdown (.md)</option><option value="xml">XML (.xml)</option><option value="yaml">YAML (.yaml)</option><option value="toml">TOML (.toml)</option><option value="txt">Text (.txt)</option>
+              </select>
+            </label>
+            <button type="button" id="teCreateFile">Create file</button>
+          </div>
+          <div class="te-file-tree-label">Files</div>
+          <div id="teFileTree" class="te-file-tree" role="tree" aria-label="NEW TOOL files"></div>
+        </aside>
+        <section class="te-code-editor" aria-label="Source editor">
+          <div class="te-code-heading"><div><strong id="teCurrentFile">index.html</strong><span id="teBreadcrumb">NEW TOOL / index.html</span></div><span id="teFileSaveState">Saved</span></div>
+          <div class="te-editor">
+            <pre id="teLineNumbers" aria-hidden="true">1</pre>
+            <textarea id="teCode" spellcheck="false" autocapitalize="off" autocomplete="off" wrap="off" aria-label="Tool source code" placeholder="Write your tool code here."></textarea>
+          </div>
+          <div class="te-editor-status"><span id="teCodeCursor">Line 1, column 1</span><span id="teCodeLanguage">HTML</span></div>
+        </section>
+        <aside class="te-code-manager">
+          <div class="te-pane-head"><strong>Script manager</strong></div>
+          <dl class="te-file-details"><dt>Selected file</dt><dd id="teManagerName">index.html</dd><dt>Language</dt><dd id="teManagerLanguage">HTML</dd><dt>Size</dt><dd id="teManagerSize">0 bytes</dd><dt>Location</dt><dd id="teManagerLocation">NEW TOOL</dd></dl>
+          <div class="te-code-actions"><button type="button" id="teGenerateCode">Generate from design</button><button type="button" id="teRunCode">Preview tool</button><button type="button" id="teDownloadFile">Download file</button><button type="button" id="teExportProject">Export project folder</button><button type="button" class="danger" id="teDeleteFile">Delete selected file</button><button type="button" class="danger" id="teDeleteFolder">Delete selected folder</button></div>
+          <p class="te-code-note">HTML, CSS, and JavaScript run in a restricted preview. Other languages can be written and exported as source files.</p>
+        </aside>
+        <iframe id="tePreview" title="Sandboxed tool preview" sandbox="allow-scripts" hidden></iframe>
+      </section>
+      <div class="te-actions"><button type="button" id="teNewTool">New tool</button><button class="te-primary" type="submit" form="teForm">Save draft</button><button type="button" id="teExport">Export tool HTML</button><span id="teMessage" role="status" aria-live="polite"></span></div>
+      <div class="te-library-heading"><div><h2>Tools in this browser</h2><p>Edit, publish, or remove tools saved in this browser.</p></div></div>
+      <div id="teToolList" class="te-tool-list"></div>
+    </section>
+    <section id="teEvents" class="te-view" hidden>
+      <div class="te-library-heading"><div><h2>Tease an upcoming tool</h2><p>Create an announcement that appears in the Tools Library.</p></div></div>
+      <form id="teEventForm" class="te-meta te-event-form">
+        <input id="teEventId" type="hidden">
+        <label>Event banner<input id="teEventBanner" type="file" accept="image/png,image/jpeg,image/webp"></label>
+        <div id="teEventBannerPreview" class="te-event-banner-preview">Banner preview</div>
+        <label>Tool name<input id="teEventName" maxlength="100" required placeholder="Next tool name"></label>
+        <label>Subtitle<input id="teEventSubtitle" maxlength="140" placeholder="Short teaser"></label>
+        <label class="te-wide">Description<textarea id="teEventDescription" rows="3" maxlength="1200" required></textarea></label>
+        <label>Release date<input id="teEventRelease" type="datetime-local" required></label>
+        <label class="te-wide">Notes<textarea id="teEventNotes" rows="3" maxlength="1000" placeholder="Optional update notes"></textarea></label>
+        <div class="te-event-actions te-wide"><button type="submit" class="te-primary">Publish teaser</button><button type="button" id="teResetEvent">Clear form</button></div>
+        <p id="teEventMessage" class="te-event-message te-wide" role="status" aria-live="polite"></p>
+      </form>
+      <div class="te-library-heading"><h2>Tool announcements</h2></div>
+      <div id="teEventList" class="te-tool-list"></div>
+    </section>
+    <section id="tePublish" class="te-view" hidden>
+      <div class="te-library-heading"><div><h2>Publish to everyone</h2><p>Send your finished tools, announcements and Kignity AI scripts live. Every visitor on every device sees the new version within about a minute.</p></div></div>
+      <div class="te-intro" id="pubAccount" role="status">Checking your sign-in…</div>
+      <div class="pro-two">
+        <div class="pro-card">
+          <div class="pro-card-head"><h3>What will go live</h3><span class="pro-muted" id="pubSize"></span></div>
+          <ul class="pro-diff" id="pubSummary"></ul>
+          <p class="pro-muted">Only tools marked <strong>Published</strong> in the Tools tab are included. Mark a tool Published first, then publish here.</p>
+          <label class="pro-field">Note for the history (optional)<input id="pubNote" maxlength="200" placeholder="e.g. Added unit converter and new FAQ answers"></label>
+          <div class="te-actions"><button class="te-primary" type="button" id="pubPublish" disabled>Publish to everyone</button><button type="button" id="pubRefresh">Check live version</button></div>
+          <div class="pro-links"><a href="tools.html?preview=local" target="_blank" rel="noopener">Preview my drafts ↗</a><a href="tools.html" target="_blank" rel="noopener">Open live page ↗</a></div>
+          <p class="pro-muted" id="pubMessage" role="status" aria-live="polite"></p>
+        </div>
+        <div class="pro-card">
+          <div class="pro-card-head"><h3>Live right now</h3></div>
+          <div id="pubLive" class="pro-muted">Checking…</div>
+          <div class="pro-card-head" style="margin-top:18px"><h3>Version history</h3></div>
+          <ol class="pro-log" id="pubHistory"><li class="pro-muted">Sign in to see history.</li></ol>
+        </div>
+      </div>
+    </section>
+    <section id="teTutorial" class="te-view" hidden>
+      <div class="te-library-heading"><div><h2>Tools Employee Tutorial</h2><p>Create the AI, build tools, publish to everyone.</p></div></div>
+      <div class="te-tutorial">
+        <h3>Create the AI (Kignity AI)</h3>
+        <ol>
+          <li>Open <strong>Kignity AI</strong>. The project <code>KIGNITY AI</code> already has a starter set: <code>kignity.json</code> (name, greeting, suggestions), skill scripts in <code>skills/</code> and answers in <code>knowledge/faq.json</code>.</li>
+          <li>Create folders and files the same way as for a tool: enter a name, choose the <strong>script type</strong>, press Create file. <code>.js</code> files run as AI scripts; <code>.json</code>, <code>.md</code> and <code>.txt</code> files are knowledge you read with <code>Kignity.data("path")</code>. Other languages are stored and exported but not run.</li>
+          <li>A skill looks like <code>Kignity.skill({ name, patterns, reply })</code>. Open <code>README.md</code> in the project for every helper.</li>
+          <li>Every edit reloads the AI. Talk to it in the <strong>Test chat</strong>; <code>console.log</code> output and errors show in the <strong>Script console</strong>. A script that runs longer than 2 seconds is stopped.</li>
+          <li>When you are happy, open <strong>Publish</strong> and publish. Visitors then talk to your version of Kignity AI on the Tools page.</li>
+        </ol>
+        <h3>Create a tool</h3>
+        <ol>
+          <li>Press <strong>＋ Create new tool</strong> (on the Kignity AI or Tools tab), enter a tool name, optional description and Refane price (0 = free).</li>
+          <li>Choose <strong>Code</strong>. The project starts at <code>NEW TOOL</code> with <code>index.html</code>, <code>styles.css</code> and <code>script.js</code>. Create more folders and files beside the editor; select a folder first to nest a file in it.</li>
+          <li>Use <strong>Preview tool</strong> to test in a restricted sandbox. HTML, CSS and JavaScript run; other languages are stored and exported only.</li>
+          <li>Press <strong>Save draft</strong>, then <strong>Publish</strong> in the tool list to mark it ready, and finally publish to everyone from the <strong>Publish</strong> tab.</li>
+        </ol>
+        <h3>Tease the next tool</h3>
+        <ol><li>Open <strong>Tool announcements</strong>, add the tool name, banner, subtitle, description, and release date.</li><li>Press Publish on the teaser, then publish to everyone from the Publish tab. It appears in the Tools Library announcement list.</li></ol>
+      </div>
+    </section>
+    <footer class="te-footer">Drafts stay in this browser until you publish. Publishing needs a Tools employee account.</footer>
+  </main>
+  <script src="tools-employee.js"></script>
+  <script src="kignity-runtime.js"></script>
+  <script src="kignity-studio.js"></script>
+  <script src="tools-employee-publish.js"></script>
+<script src="../index/kit-bar.js" defer></script>
+</body>
+</html>

@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <script src="../index/rp-config.js"></script><script src="../index/rp-backend.js"></script><script src="../index/rp-site-loader.js"></script>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>RP Tools Library</title>
+  <style>
+    :root{color-scheme:dark;--bg:#0c1114;--panel:#141d22;--raised:#1c292f;--text:#e7edef;--muted:#a0afb4;--line:#2c3c42;--green:#70d7ae;--blue:#78b9e5}
+    *{box-sizing:border-box}
+    body{margin:0;background:var(--bg);color:var(--text);font:15px/1.5 'Segoe UI',system-ui,sans-serif}
+    header{height:58px;display:flex;align-items:center;justify-content:space-between;padding:0 max(18px,calc((100vw - 1080px)/2));border-bottom:1px solid var(--line);background:#10171b}
+    header a{color:var(--muted);text-decoration:none}header a:hover{color:var(--green)}header .brand{color:var(--text);font-weight:850}.brand span{color:var(--green)}
+    main{width:min(1080px,100%);margin:auto;padding:28px 22px}
+    .eyebrow{margin:0 0 4px;color:var(--green);font-size:11px;font-weight:750}.heading{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:20px}.heading h1{margin:0;font-size:28px}.heading p{margin:4px 0 0;color:var(--muted);font-size:13px}
+    .notice{padding:11px 13px;border:1px solid var(--line);border-radius:4px;background:var(--panel);color:var(--muted);font-size:12px}
+    .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px;margin-top:18px}
+    .tool-card{min-height:115px;padding:14px;border:1px solid var(--line);border-radius:4px;background:var(--panel);color:var(--text);text-align:left;cursor:pointer}.tool-card:hover{border-color:var(--green);background:var(--raised)}.tool-card strong{display:block;font-size:15px}.tool-card span{display:block;margin-top:5px;color:var(--muted);font-size:12px}.price{color:var(--green)!important}
+    .empty{padding:22px 0;color:var(--muted)}
+    .button{min-height:36px;padding:7px 11px;border:1px solid var(--line);border-radius:3px;background:var(--raised);color:var(--text);cursor:pointer}.button:hover{border-color:var(--green)}
+    .tool-view{margin-top:14px;padding:18px;border:1px solid var(--line);border-radius:4px;background:var(--panel)}.tool-view h2{margin:0 0 8px}.tool-view p{color:var(--muted)}.component{padding:12px;margin:8px 0;border-radius:3px}.component h3,.component p{margin:0;color:inherit}
+    .tool-code-preview{display:block;width:100%;min-height:430px;border:1px solid var(--line);background:white}
+    .tool-view input{width:min(100%,480px);padding:9px;border:1px solid var(--line);border-radius:3px;background:#0d1418;color:var(--text)}
+    .status{padding:10px;background:var(--raised);color:var(--green)}
+    .announcements{margin-top:22px;border-top:1px solid var(--line);padding-top:18px}.announcements h2{margin:0;font-size:19px}.announcement-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:10px;margin-top:12px}.announcement{overflow:hidden;border:1px solid var(--line);border-radius:4px;background:var(--panel)}.announcement img{display:block;width:100%;aspect-ratio:16/7;object-fit:cover;background:var(--raised)}.announcement-copy{padding:12px}.announcement-copy h3{margin:0;font-size:16px}.announcement-copy p{margin:5px 0;color:var(--muted);font-size:13px}.announcement-date{color:var(--green)!important}
+    .kignity{margin:0 0 22px}.kignity h2{margin:0 0 4px;font-size:19px}.kignity p{margin:0 0 10px;color:var(--muted);font-size:13px}
+    .sync-note{margin-top:14px;color:var(--muted);font-size:11px}.employee-link{display:none}
+    @media(max-width:600px){main{padding:20px 14px}.heading{align-items:flex-start;flex-direction:column}.tool-view{padding:12px}}
+  </style>
+<link rel="stylesheet" href="../index/rp-ui.css"><script src="../index/rp-ui.js"></script></head>
+<body>
+  <header><a class="brand" href="../index/index.html">RP <span>TOOLS</span></a><span><a class="employee-link" id="employeeLink" href="tools-employee.html">Tools employee workspace</a> &nbsp; <a href="../index/index.html">Back to RP</a></span></header>
+  <main>
+    <div class="heading"><div><p class="eyebrow">TOOLS BRANCH</p><h1>Tools Library</h1><p>Tools published by RP Tools employees.</p></div></div>
+    <div class="notice" id="liveNotice">Tools appear here after an employee publishes them. Prices are informational; purchases are not enabled.</div>
+    <section class="kignity" aria-labelledby="kgHeading"><h2 id="kgHeading">Kignity AI</h2><p>The assistant for RP Tools. Ask about our tools, prices or Refane.</p><div id="kignityChat"></div></section>
+    <section class="announcements" aria-labelledby="announcementHeading"><h2 id="announcementHeading">Coming soon</h2><div id="announcementList" class="announcement-list"></div></section>
+    <section id="toolsGrid" class="grid" aria-label="Published tools"></section>
+    <section id="toolDetail" hidden></section>
+    <p class="sync-note" id="syncNote"></p>
+  </main>
+  <script src="kignity-runtime.js"></script>
+  <script>
+    (() => {
+      const STORAGE_KEY = "rpToolsManaged.v1";
+      const EVENTS_KEY = "rpToolsAnnouncements.v1";
+      const $ = id => document.getElementById(id);
+      const SB_URL = "https://nesxcgymsgegkqjhfydx.supabase.co", SB_KEY = "sb_publishable_Tj4frYyU-iAylsH_--y3Qg_esNYqce-";
+      const CACHE_KEY = "rpToolsPublicCache.v1", SESSION_KEY = "sb-nesxcgymsgegkqjhfydx-auth-token", EDITOR_ROLES = ["Creator", "Tool Studio Director", "Tool Employee"];
+      const PREVIEW = new URLSearchParams(location.search).get("preview") === "local";
+      const state = { snapshot: null, version: 0, loaded: false, offline: false };
+      let runtime = null, chat = null, kgSig = "", toolsSig = "";
+      const readLocal = (k, f) => { try { const v = JSON.parse(localStorage.getItem(k) || "null"); return v == null ? f : v; } catch { return f; } };
+      function loadCache() { const c = readLocal(CACHE_KEY, null); if (c && c.snapshot && typeof c.snapshot === "object") { state.snapshot = c.snapshot; state.version = Number(c.version) || 0; } }
+      function saveCache() { try { localStorage.setItem(CACHE_KEY, JSON.stringify({ version: state.version, snapshot: state.snapshot })); } catch {} }
+      async function api(query) {
+        const r = await fetch(SB_URL + "/rest/v1/rp_tools_publications?" + query, { headers: { apikey: SB_KEY, Accept: "application/json" }, cache: "no-store" });
+        if (!r.ok) throw new Error("HTTP " + r.status); return r.json();
+      }
+      function renderNote() {
+        const n = $("syncNote");
+        n.textContent = PREVIEW ? "Preview of your local drafts. Visitors only see what you publish." : state.offline ? "Offline: showing the last version saved on this device." : state.version ? "Live version " + state.version + "." : "";
+      }
+      async function syncLive(force) {
+        if (PREVIEW) return;
+        try {
+          const head = await api("select=version&order=version.desc&limit=1"); state.offline = false;
+          const latest = head.length ? Number(head[0].version) : 0;
+          if (!force && state.loaded && latest === state.version) return renderNote();
+          if (!latest) { state.snapshot = null; state.version = 0; state.loaded = true; return refreshAll(); }
+          const rows = await api("select=version,snapshot&version=eq." + latest + "&limit=1");
+          if (rows.length && rows[0].snapshot && typeof rows[0].snapshot === "object") { state.snapshot = rows[0].snapshot; state.version = Number(rows[0].version); saveCache(); }
+          state.loaded = true; refreshAll();
+        } catch { state.offline = true; state.loaded = true; refreshAll(); }
+      }
+      function publishedTools() {
+        let list = [];
+        if (PREVIEW) list = readLocal(STORAGE_KEY, []);
+        else if (state.snapshot && Array.isArray(state.snapshot.tools)) list = state.snapshot.tools.map(t => Object.assign({}, t, { published: true }));
+        return Array.isArray(list) ? list.filter(tool => tool && tool.published === true && typeof tool.id === "string" && typeof tool.name === "string" && Array.isArray(tool.components)) : [];
+      }
+      function announcementItems() {
+        let items = [];
+        if (PREVIEW) items = readLocal(EVENTS_KEY, []);
+        else if (state.snapshot && Array.isArray(state.snapshot.events)) items = state.snapshot.events.map(e => Object.assign({}, e, { published: true }));
+        return Array.isArray(items) ? items.filter(item => item && item.published === true && typeof item.name === "string") : [];
+      }
+      function kignityFiles() {
+        if (PREVIEW) { const p = readLocal("rpKignityProject.v1", null); return p && Array.isArray(p.files) ? p.files : window.KignityRuntime.starterFiles(); }
+        const k = state.snapshot && state.snapshot.kignity;
+        return k && Array.isArray(k.files) && k.files.length ? k.files : window.KignityRuntime.starterFiles();
+      }
+      async function refreshKignity() {
+        const files = kignityFiles(), tools = publishedTools().map(t => ({ name: t.name, description: t.description || "", price: Number(t.price) > 0 ? Number(t.price) : 0 }));
+        const sig = JSON.stringify([files.map(f => [f.path, f.content]), tools]);
+        if (sig === kgSig && runtime) return; kgSig = sig;
+        if (!chat) chat = window.KignityRuntime.mountChat($("kignityChat"), { title: "Kignity AI" });
+        if (runtime) runtime.stop();
+        runtime = window.KignityRuntime.create(files, { context: { tools } });
+        const r = await runtime.ready(); chat.attach(runtime, r.info);
+      }
+      async function updateEmployeeLink() {
+        const link = $("employeeLink"); if (!link) return;
+        if (PREVIEW) { link.style.display = "inline"; return; }
+        let stored = null; try { stored = JSON.parse(localStorage.getItem(SESSION_KEY) || "null"); } catch {}
+        const token = stored && typeof stored.access_token === "string" ? stored.access_token : "";
+        if (!token || Number(stored.expires_at) * 1000 < Date.now()) return;
+        try {
+          const r = await fetch(SB_URL + "/rest/v1/rpc/rp_get_account_context", { method: "POST", headers: { apikey: SB_KEY, Authorization: "Bearer " + token, "Content-Type": "application/json" }, body: "{}" });
+          if (!r.ok) return; const a = await r.json(); const roles = Array.isArray(a.roles) ? a.roles : [];
+          if (a.status === "active" && roles.some(x => EDITOR_ROLES.includes(x))) link.style.display = "inline";
+        } catch {}
+      }
+      function refreshAll() { const open = !$("toolDetail").hidden; renderAnnouncements(); if (!open) renderLibrary(); renderNote(); refreshKignity(); }
+      function renderLibrary() {
+        const root = $("toolsGrid"); root.replaceChildren(); $("toolDetail").hidden = true; root.hidden = false;
+        const tools = publishedTools();
+        if (!tools.length) { const empty = document.createElement("p"); empty.className = "empty"; empty.textContent = "No tools have been published yet."; root.append(empty); return; }
+        tools.forEach(tool => {
+          const card = document.createElement("button"); card.type = "button"; card.className = "tool-card";
+          const name = document.createElement("strong"); name.textContent = tool.name;
+          const description = document.createElement("span"); description.textContent = tool.description || "RP Tools employee tool";
+          const price = document.createElement("span"); price.className = "price"; price.textContent = Number(tool.price) > 0 ? Number(tool.price) + " Refane" : "Free";
+          card.append(name, description, price); card.addEventListener("click", () => openTool(tool.id)); root.append(card);
+        });
+      }
+      function renderAnnouncements() {
+        const root = $("announcementList"); root.replaceChildren();
+        const items = announcementItems();
+        if (!items.length) { const empty = document.createElement("p"); empty.className = "empty"; empty.textContent = "No upcoming tool announcements."; root.append(empty); return; }
+        items.forEach(item => {
+          const card = document.createElement("article"); card.className = "announcement";
+          if (typeof item.banner === "string" && item.banner.startsWith("data:image/")) { const image = document.createElement("img"); image.src = item.banner; image.alt = item.name + " announcement banner"; card.append(image); }
+          const copy = document.createElement("div"); copy.className = "announcement-copy";
+          const title = document.createElement("h3"); title.textContent = item.name;
+          const subtitle = document.createElement("p"); subtitle.textContent = item.subtitle || "";
+          const description = document.createElement("p"); description.textContent = item.description || "";
+          const date = document.createElement("p"); date.className = "announcement-date"; date.textContent = item.release ? "Planned release · " + new Date(item.release).toLocaleString() : "Release date to be announced";
+          copy.append(title); if (item.subtitle) copy.append(subtitle); copy.append(description, date); if (item.notes) { const notes = document.createElement("p"); notes.textContent = item.notes; copy.append(notes); } card.append(copy); root.append(card);
+        });
+      }
+      function openTool(id) {
+        const tool = publishedTools().find(item => item.id === id); if (!tool) return renderLibrary();
+        const root = $("toolDetail"); root.replaceChildren(); $("toolsGrid").hidden = true; root.hidden = false;
+        const back = document.createElement("button"); back.type = "button"; back.className = "button"; back.textContent = "Back to library"; back.addEventListener("click", renderLibrary);
+        const panel = document.createElement("div"); panel.className = "tool-view";
+        const title = document.createElement("h2"); title.textContent = tool.name;
+        const description = document.createElement("p"); description.textContent = tool.description || "";
+        const price = document.createElement("p"); price.textContent = Number(tool.price) > 0 ? Number(tool.price) + " Refane · Purchases are not enabled." : "Free";
+        const status = document.createElement("p"); status.className = "status"; status.hidden = true; status.setAttribute("role", "status");
+        panel.append(title, description, price);
+        if (tool.code && tool.code.manual === true) {
+          const frame = document.createElement("iframe"); frame.className = "tool-code-preview"; frame.title = "Sandboxed preview of " + tool.name; frame.setAttribute("sandbox", "allow-scripts"); frame.referrerPolicy = "no-referrer";
+          const css = String(tool.code.css || "").replace(/<\/style/gi, "<\\/style"), js = String(tool.code.js || "").replace(/<\/script/gi, "<\\/script");
+          const policy = "default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data: blob:; connect-src 'none'; form-action 'none'; base-uri 'none'";
+          frame.srcdoc = '<!doctype html><html><head><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="' + policy + '"><meta name="viewport" content="width=device-width,initial-scale=1"><style>' + css + '</style></head><body>' + String(tool.code.html || "") + '<script>' + js + '<\/script></body></html>';
+          panel.append(frame); panel.append(status); root.append(back, panel); return;
+        }
+        (tool.components || []).forEach(item => {
+          if (!item || typeof item.type !== "string") return;
+          const block = document.createElement("div"); block.className = "component";
+          block.style.color = /^#[0-9a-f]{6}$/i.test(item.color) ? item.color : "#17232a";
+          block.style.backgroundColor = /^#[0-9a-f]{6}$/i.test(item.background) ? item.background : "#e9f2ef";
+          block.style.fontSize = Math.max(12, Math.min(40, Number(item.fontSize) || 16)) + "px";
+          block.style.padding = "12px"; block.style.margin = "8px 0";
+          if (item.type === "heading") { const node = document.createElement("h3"); node.textContent = item.text || ""; block.append(node); }
+          else if (item.type === "text") { const node = document.createElement("p"); node.textContent = item.text || ""; block.append(node); }
+          else if (item.type === "button") { const node = document.createElement("button"); node.type = "button"; node.className = "button"; node.textContent = item.text || "Run"; node.addEventListener("click", () => { status.textContent = item.message || "Done."; status.hidden = false; }); block.append(node); }
+          else if (item.type === "input") { const node = document.createElement("input"); node.placeholder = item.text || ""; node.setAttribute("aria-label", item.text || "Tool input"); block.append(node); }
+          else if (item.type === "output") { const node = document.createElement("output"); node.textContent = item.text || ""; block.append(node); }
+          else if (item.type === "divider") { const node = document.createElement("hr"); block.append(node); }
+          else return;
+          panel.append(block);
+        });
+        panel.append(status); root.append(back, panel);
+      }
+      if (!PREVIEW) { loadCache(); state.loaded = !!state.snapshot; const n = $("liveNotice"); if (n) n.textContent = "Tools appear here after an employee publishes them. Prices are informational; purchases are not enabled."; }
+      refreshAll(); updateEmployeeLink(); syncLive(true);
+      if (!PREVIEW) { setInterval(() => { if (!document.hidden) syncLive(false); }, 60000); window.addEventListener("online", () => syncLive(false)); }
+      document.addEventListener("visibilitychange", () => { if (!document.hidden) PREVIEW ? refreshAll() : syncLive(false); });
+      window.addEventListener("storage", () => { if (PREVIEW) refreshAll(); });
+    })();
+  </script>
+<script src="../index/kit-bar.js" defer></script>
+</body>
+</html>

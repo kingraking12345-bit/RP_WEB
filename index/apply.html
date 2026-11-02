@@ -1,0 +1,28 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><script src="rp-config.js"></script><script src="rp-backend.js"></script><script src="rp-site-loader.js"></script><title>I want to apply — RP</title><link rel="stylesheet" href="kit.css"><link rel="stylesheet" href="rp-ui.css"><script src="rp-ui.js"></script></head>
+<body><main class="k-wrap"><h1>I want to apply</h1><p class="k-muted">Work for Raking Productions. One application form for every branch.</p>
+<div class="k-card"><h3 style="margin-top:0">Hours and pay</h3><ul><li><strong>5 hours a day.</strong> Saturday and Sunday are off, unless a major release is coming soon.</li><li><strong>Pay depends on your monthly productivity.</strong></li><li>If the Creator accepts you, you are notified here and your employee workspace opens automatically on the main page.</li></ul></div>
+<div id="gate" class="k-card" hidden>Sign in on the <a href="index.html">main page</a> first, then come back to apply.</div>
+<form id="f" class="k-card" hidden>
+<div class="k-row"><label style="flex:1;min-width:200px">Branch<select id="branch"></select></label><label style="flex:1;min-width:200px">Position<select id="kind"><option value="employee">Employee (content and management work)</option><option value="developer">Developer (Dev Team, edits code in the Coder)</option></select></label></div>
+<label>Why do you want to join? (a few sentences)<textarea id="why" required maxlength="3000"></textarea></label>
+<label>Your qualifications and relevant experience<textarea id="qual" required maxlength="3000"></textarea></label>
+<label>Links to your work (optional, one per line)<textarea id="links" maxlength="1500"></textarea></label>
+<label>Interview question: describe a problem you solved recently and how<textarea id="interview" maxlength="3000"></textarea></label>
+<label style="grid-template-columns:auto 1fr;align-items:center;gap:10px"><input type="checkbox" id="hours" style="width:auto" required> I can work 5 hours a day and I accept pay based on monthly productivity.</label>
+<div class="k-row"><button class="k-btn" type="submit">Send application</button><span id="msg" class="k-msg" role="status"></span></div></form>
+<section id="mine" class="k-card" hidden><h3 style="margin-top:0">My applications</h3><div id="apps"></div></section>
+<section id="notes" class="k-card" hidden><div class="k-row" style="justify-content:space-between"><h3 style="margin:0">Notifications</h3><button class="k-btn ghost" id="readall" type="button">Mark all read</button></div><div id="nl"></div></section></main>
+<script src="kit-lib.js"></script><script>
+(async()=>{await RPK.ready;const {rpc,esc,user,BRANCHES,params}=RPK;RPK.topbar("apply");const $=s=>document.querySelector(s);
+const P=params();$("#branch").innerHTML=Object.entries(BRANCHES).filter(([k])=>k!=="rp").map(([k,v])=>'<option value="'+k+'">'+esc(v)+'</option>').join("");if(BRANCHES[P.branch]&&P.branch!=="rp")$("#branch").value=P.branch;
+const say=(t,bad)=>{$("#msg").textContent=t;$("#msg").className="k-msg "+(bad?"err":"ok")};
+if(!(await user())){$("#gate").hidden=false;return}
+$("#f").hidden=false;$("#mine").hidden=false;$("#notes").hidden=false;
+async function load(){
+ try{const a=await rpc("rp_my_applications");$("#apps").innerHTML=a.length?a.map(x=>'<div class="k-row" style="justify-content:space-between;border-top:1px solid var(--border);padding:8px 0"><span><strong>'+esc(BRANCHES[x.branch])+'</strong> · '+esc(x.kind)+' · <span class="k-badge '+x.status+'">'+x.status+'</span><br><small class="k-muted">'+new Date(x.created_at).toLocaleString()+(x.decision_note?' — '+esc(x.decision_note):"")+'</small></span>'+(x.status==="pending"?'<button class="k-btn ghost" data-w="'+x.id+'">Withdraw</button>':"")+'</div>').join(""):'<p class="k-muted">You have not applied yet.</p>';
+  $("#apps").querySelectorAll("[data-w]").forEach(b=>b.onclick=async()=>{try{await rpc("rp_withdraw_application",{p_id:Number(b.dataset.w)});load()}catch(e){say(e.message,true)}})}catch(e){$("#apps").textContent=e.message}
+ try{const n=await rpc("rp_my_notifications",{p_limit:30});$("#nl").innerHTML=n.length?n.map(x=>'<div style="border-top:1px solid var(--border);padding:8px 0'+(x.read?";opacity:.65":"")+'"><strong>'+(x.read?"":"● ")+esc(x.title)+'</strong><br><span style="white-space:pre-wrap">'+esc(x.body)+'</span><br><small class="k-muted">'+new Date(x.created_at).toLocaleString()+'</small></div>').join(""):'<p class="k-muted">No notifications.</p>'}catch(e){$("#nl").textContent=e.message}}
+$("#readall").onclick=async()=>{await rpc("rp_mark_notifications_read");load()};
+$("#f").onsubmit=async e=>{e.preventDefault();say("Sending…");try{await rpc("rp_submit_application",{p_branch:$("#branch").value,p_kind:$("#kind").value,p_answers:{why:$("#why").value,qualifications:$("#qual").value,links:$("#links").value,interview:$("#interview").value,agreed_hours:true}});say("Application sent. The Creator will review it and you will be notified here.");$("#f").reset();load()}catch(er){say(er.message,true)}};
+load();})();
+</script><script src="kit-bar.js" defer></script></body></html>

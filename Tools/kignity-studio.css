@@ -1,0 +1,37 @@
+/* Kignity AI studio + Tools employee additions (loads after tools-employee.css) */
+.te-tabs{overflow-x:auto}.te-tabs button{white-space:nowrap;flex:none}
+.te-intro{margin:0 0 12px;padding:10px 13px;border:1px solid #3d5a73;border-radius:4px;background:#101e29;color:#b9d8f0;font-size:13px}
+.te-intro strong{color:#e6f2fb}
+.kg-head-row{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:10px}
+.kg-head-row h2{margin:0;font-size:18px}.kg-head-row p{margin:3px 0 0;color:var(--te-muted);font-size:12px}
+.te-create-tool{min-height:38px;padding:8px 14px;border:1px solid #328968;border-radius:4px;background:#246c53;color:#fff;font-weight:700;cursor:pointer}
+.te-create-tool:hover{background:#2c8264}
+.kg-workspace{min-height:460px}
+.kg-bottom{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:0;border:1px solid var(--te-border);border-top:0;background:#0b1114}
+.kg-test,.kg-consolewrap{min-width:0;background:#11191e}.kg-consolewrap{border-left:1px solid var(--te-border)}
+.kg-test #kgChat{padding:10px}
+.kg-run-status{padding:6px 11px;border-bottom:1px solid var(--te-border);font-size:11px;color:var(--te-muted)}
+.kg-run-status.ok{color:var(--te-accent)}.kg-run-status.bad{color:#f0cf7a}
+.kg-console{height:360px;overflow:auto;padding:8px 10px;font:12px/1.5 Consolas,'Courier New',monospace}
+.kg-log{padding:2px 0;border-bottom:1px solid #1d2a31;overflow-wrap:anywhere}.kg-log time{margin-right:8px;color:var(--te-muted);font-size:10px}.kg-log.error{color:var(--te-red)}.kg-log.warn{color:#f0cf7a}
+.kg-mini{min-height:24px;padding:2px 8px;border:1px solid var(--te-border);border-radius:3px;background:var(--te-raised);color:var(--te-text);font-size:11px;cursor:pointer}
+.kg-chat{--kg-bg:#0d1418;max-height:340px}
+.te-publish-tab{font-weight:700}
+@media(max-width:900px){.kg-bottom{grid-template-columns:1fr}.kg-consolewrap{border-left:0;border-top:1px solid var(--te-border)}.kg-console{height:200px}}
+/* publish panel (same look as Games) */
+.te-status-wrap{display:flex;flex-direction:column;align-items:flex-end;gap:6px}
+.pro-chip{padding:5px 12px;border:1px solid var(--te-border);border-radius:14px;background:var(--te-raised);color:var(--te-muted);font-size:12px;cursor:pointer}
+.pro-chip.ok{color:var(--te-accent);border-color:#328968}.pro-chip.warn{color:#f0cf7a;border-color:#7a6430}.pro-chip.bad{color:var(--te-red);border-color:#744949}
+.pro-two{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.pro-card{padding:16px;border:1px solid var(--te-border);border-radius:5px;background:var(--te-panel)}
+.pro-card-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}.pro-card-head h3{margin:0;font-size:15px}
+.pro-muted{color:var(--te-muted);font-size:13px}
+.pro-diff{margin:0 0 14px;padding:0;list-style:none;display:grid;gap:6px}
+.pro-diff li{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:7px 10px;border:1px solid var(--te-border);border-radius:4px;font-size:13px;background:#0d1419}
+.pro-diff .tag{font-size:11px;font-weight:700;padding:1px 8px;border-radius:10px}.pro-diff .tag.same{background:#16352a;color:var(--te-accent)}.pro-diff .tag.changed{background:#3a2f12;color:#f0cf7a}
+.pro-field{display:grid;gap:6px;color:var(--te-muted);font-size:13px}.pro-field input{width:100%;border:1px solid var(--te-border);border-radius:4px;background:#0d1419;color:var(--te-text);padding:10px 11px}
+.pro-links{display:flex;gap:16px;margin:4px 0 8px;font-size:13px}.pro-links a{color:var(--te-blue);text-decoration:none}
+.pro-log{margin:0;padding:0;list-style:none;display:grid;gap:6px;max-height:260px;overflow:auto}.pro-log li{display:flex;justify-content:space-between;gap:10px;font-size:12px;padding:6px 0;border-bottom:1px solid #1d2a31}.pro-log time{color:var(--te-muted);white-space:nowrap;font-size:11px}
+.pro-hist-row button{min-height:28px;padding:3px 9px;border:1px solid var(--te-border);border-radius:4px;background:var(--te-raised);color:var(--te-text);font-size:12px;cursor:pointer}
+.te-intro.ok{border-color:#456755;background:#13221b;color:#b5e8cd}.te-intro.bad{border-color:#744949;background:#271616;color:#f3b9b9}.te-intro a{color:inherit;font-weight:700}
+@media(max-width:820px){.pro-two{grid-template-columns:1fr}}

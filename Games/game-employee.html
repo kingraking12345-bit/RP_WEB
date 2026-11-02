@@ -1,0 +1,253 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <script src="../index/rp-config.js"></script><script src="../index/rp-backend.js"></script><script src="../index/rp-site-loader.js"></script>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>RP Games Employee Preview</title>
+  <link rel="stylesheet" href="game-employee.css">
+  <link rel="stylesheet" href="game-employee-pro.css">
+<link rel="stylesheet" href="../index/rp-ui.css"><script src="../index/rp-ui.js"></script></head>
+<body>
+  <header class="ee-topbar">
+    <a class="ee-brand" href="../index/index.html">RP <span>GAMES</span></a>
+    <a class="ee-back" href="games.html">← Games preview</a>
+  </header>
+  <main class="ee-main">
+    <div class="ee-alert"><strong>DRAFTS ARE LOCAL</strong><span>Your edits are drafts saved in this browser. Nothing is visible to other people until you press <b>Publish to everyone</b> in the Publish tab (employee sign-in required).</span></div>
+    <div class="ee-title"><div><p class="ee-eyebrow">RP GAMES</p><h1>Employee workspace</h1></div><div class="ee-status-wrap"><button type="button" class="pro-chip" id="proPubChip" title="Open the Publish tab">Checking live site…</button><div class="ee-storage" id="storageStatus" role="status">Local draft storage</div></div></div>
+    <nav class="ee-tabs" role="tablist" aria-label="Employee tools">
+      <button class="active" type="button" role="tab" aria-selected="true" data-panel="dashboard">Dashboard</button>
+      <button type="button" role="tab" aria-selected="false" data-panel="publish" class="pro-publish-tab">Publish</button>
+      <button type="button" role="tab" aria-selected="false" data-panel="tabs">Games tabs</button>
+      <button type="button" role="tab" aria-selected="false" data-panel="events">Event announcements</button>
+      <button type="button" role="tab" aria-selected="false" data-panel="features">Features &amp; Refane pricing</button>
+      <button type="button" role="tab" aria-selected="false" data-panel="patch">Patch notes</button>
+      <button type="button" role="tab" aria-selected="false" data-panel="roadmap">Roadmap</button>
+      <button type="button" role="tab" aria-selected="false" data-panel="banner">Site banner</button>
+      <button type="button" role="tab" aria-selected="false" data-panel="backup">Data &amp; backup</button>
+    </nav>
+
+    <section class="ee-panel active" id="panel-dashboard" role="tabpanel">
+      <div class="ee-section-title"><div><h2>Dashboard</h2><p>A live overview of what is published on the Games branch and what still needs attention.</p></div></div>
+      <div class="pro-tiles" id="proTiles"></div>
+      <div class="pro-two">
+        <div class="pro-card">
+          <div class="pro-card-head"><h3>Launch readiness</h3><strong id="proReadyPct">0%</strong></div>
+          <div class="pro-bar"><div id="proReadyBar"></div></div>
+          <ul class="pro-check" id="proChecklist"></ul>
+        </div>
+        <div class="pro-card">
+          <div class="pro-card-head"><h3>Quick actions</h3></div>
+          <div class="pro-quick" id="proQuick">
+            <button type="button" data-go="tabs">+ New Games tab</button>
+            <button type="button" data-go="events">+ New event</button>
+            <button type="button" data-go="features">Set feature prices</button>
+            <button type="button" data-go="patch">+ Patch notes</button>
+            <button type="button" data-go="roadmap">+ Roadmap item</button>
+            <button type="button" data-go="banner">Edit site banner</button>
+          </div>
+          <div class="pro-card-head" style="margin-top:18px"><h3>Recent activity</h3><button type="button" id="proClearLog" class="pro-link">Clear</button></div>
+          <ol class="pro-log" id="proLog"></ol>
+        </div>
+      </div>
+    </section>
+
+    <section class="ee-panel" id="panel-tabs" role="tabpanel" hidden>
+      <div class="ee-section-title"><div><h2>New tab</h2><p>Create or edit a custom RP Games page. Use the code workspace below to write its files.</p></div></div>
+      <details class="ee-tutorial">
+        <summary>Employee tutorial: create or edit a Games tab</summary>
+        <div class="ee-tutorial-content">
+          <h3>Create a tab</h3>
+          <ol>
+            <li>Enter the page name and optional subtitle in the form below.</li>
+            <li>In <strong>Tab code</strong>, the <code>index.html</code>, <code>styles.css</code> and <code>script.js</code> files are ready for you. Write your page in them. Use <strong>NEW SCRIPT</strong> to add more files: pick a script type, enter a file name, and choose <strong>Create file</strong>. Folders work the same way.</li>
+            <li>Line numbers update as you type, and drafts autosave in this browser.</li>
+            <li>Choose <strong>Add tab to Games preview</strong>. Your HTML, CSS, and JavaScript are applied to the tab automatically, and the tab is listed under <strong>Tabs in this browser</strong>.</li>
+          </ol>
+          <h3>Edit a tab</h3>
+          <ol>
+            <li>Find it under <strong>Tabs in this browser</strong> and choose <strong>Edit</strong>.</li>
+            <li>Its saved HTML, CSS, and JavaScript load into <strong>Tab code</strong>. Make changes, then choose <strong>Save tab</strong>.</li>
+          </ol>
+          <p>Other files and folders can be organized and exported from the script manager. This preview saves to this browser only; it does not publish changes to GitHub or update other visitors' copies of the site.</p>
+        </div>
+      </details>
+      <form id="tabForm" class="ee-form">
+        <input type="hidden" id="tabId">
+        <label>Tab name<input id="tabName" required maxlength="40" placeholder="e.g. Community Events"></label>
+        <label>Subtitle<input id="tabSubtitle" maxlength="120" placeholder="Short page heading"></label>
+        <label>Refane price to unlock<input id="tabPrice" type="number" min="0" max="1000000" step="1" value="0"><small class="pro-muted">0 = free for everyone. Above 0 = visitors pay that many Refane to open this tab. Paid tab content is kept private on the server until it is paid for.</small></label>
+        <textarea id="tabHtml" hidden></textarea><textarea id="tabCss" hidden></textarea><textarea id="tabJs" hidden></textarea>
+        <div class="ee-actions full"><button class="ee-primary" type="submit" id="saveTab">Add tab to Games preview</button><button type="button" id="resetTab">Clear editor</button><button type="button" id="downloadHtml">Download standalone HTML</button><button type="button" id="saveFolder">Save HTML/CSS/JS folder</button></div>
+        <p class="ee-message full" id="tabMessage" role="status" aria-live="polite"></p>
+      </form>
+      <div class="ee-section-title"><div><h2>Tab code</h2><p>Create folders and scripts for this page. Load or apply the HTML, CSS, and JavaScript using the controls beside the editor.</p></div><button type="button" id="ssLoadFromTab">Load tab fields into editor</button></div>
+      <div class="ss-workspace">
+        <aside class="ss-pane ss-explorer" aria-label="Project files">
+          <div class="ss-pane-heading"><strong>Explorer</strong><span>NEW SCRIPT</span></div>
+          <div class="ss-create">
+            <label>Folder name<input id="ssFolderName" maxlength="48" placeholder="e.g. game-ui"></label>
+            <button type="button" id="ssCreateFolder">Create folder</button>
+            <label>File name<input id="ssFileName" maxlength="48" placeholder="e.g. main"></label>
+            <label>Script type<select id="ssFileType">
+              <option value="html">HTML (.html)</option><option value="js">JavaScript (.js)</option><option value="ts">TypeScript (.ts)</option><option value="py">Python (.py)</option><option value="css">CSS (.css)</option><option value="json">JSON (.json)</option><option value="lua">Lua (.lua)</option><option value="sql">SQL (.sql)</option><option value="md">Markdown (.md)</option><option value="xml">XML (.xml)</option><option value="yaml">YAML (.yaml)</option><option value="txt">Text (.txt)</option>
+            </select></label>
+            <button type="button" id="ssCreateFile">Create file</button>
+          </div>
+          <div class="ss-tree-label">Project files</div>
+          <div class="ss-tree" id="ssTree" role="tree" aria-label="NEW SCRIPT files"></div>
+        </aside>
+        <section class="ss-pane ss-editor" aria-label="Code editor">
+          <div class="ss-editor-heading"><div><strong id="ssCurrentFile">index.html</strong><span id="ssBreadcrumb">NEW SCRIPT / index.html</span></div><span id="ssSaveState" role="status">Saved</span></div>
+          <div class="ss-code-area"><pre class="ss-line-numbers" id="ssLineNumbers" aria-hidden="true">1</pre><textarea id="ssCode" spellcheck="false" autocapitalize="off" autocomplete="off" aria-label="Source code" wrap="off" placeholder="Select or create a file to start writing."></textarea></div>
+          <div class="ss-editor-footer"><span id="ssCursor">Line 1, column 1</span><span id="ssLanguage">HTML</span></div>
+        </section>
+        <aside class="ss-pane ss-manager" aria-label="Script manager">
+          <div class="ss-pane-heading"><strong>Script manager</strong></div>
+          <dl class="ss-file-details"><dt>Selected file</dt><dd id="ssManagerName">index.html</dd><dt>Language</dt><dd id="ssManagerLanguage">HTML</dd><dt>File size</dt><dd id="ssManagerSize">0 bytes</dd><dt>Location</dt><dd id="ssManagerLocation">NEW SCRIPT</dd></dl>
+          <div class="ss-manager-actions"><button type="button" id="ssApplyToTab">Apply code to tab fields</button><button type="button" id="ssDownload">Download file</button><button type="button" id="ssExport">Export project folder</button><button type="button" class="ee-danger" id="ssDeleteFile">Delete selected file</button><button type="button" class="ee-danger" id="ssDeleteFolder">Delete selected folder</button></div>
+          <p class="ss-manager-note">Apply the code, then save the tab above. Exporting asks you to choose a folder.</p>
+          <p id="ssMessage" class="ee-message" role="status" aria-live="polite"></p>
+        </aside>
+      </div>
+      <div class="ee-list-heading"><h2>Tabs in this browser</h2><button class="ee-danger" id="deleteAllTabs" type="button">Delete all custom tabs</button></div>
+      <div class="ee-list" id="tabList"></div>
+    </section>
+
+    <section class="ee-panel" id="panel-events" role="tabpanel" hidden>
+      <div class="ee-section-title"><div><h2>New event</h2><p>Publish an update teaser on the Games page and let visitors save a local reminder.</p></div></div>
+      <form id="eventForm" class="ee-form">
+        <input type="hidden" id="eventId">
+        <label>Event banner<input id="eventBanner" type="file" accept="image/png,image/jpeg,image/webp"></label>
+        <div class="ee-banner-preview" id="bannerPreview">Banner preview</div>
+        <label>Name<input id="eventName" required maxlength="100"></label>
+        <label>Subtitle<input id="eventSubtitle" maxlength="140"></label>
+        <label class="full">Description<textarea id="eventDescription" rows="4" maxlength="1200" required></textarea></label>
+        <label>Release date<input id="eventRelease" type="datetime-local" required></label>
+        <label>Status<select id="eventStatus"><option value="published">Published (visible to visitors)</option><option value="draft">Draft (hidden)</option></select></label>
+        <label class="full">Notes<textarea id="eventNotes" rows="3" maxlength="1000" placeholder="Do not enter confidential information in this demo."></textarea></label>
+        <div class="ee-actions full"><button class="ee-primary" type="submit" id="saveEvent">Publish event teaser</button><button type="button" id="resetEvent">Clear form</button></div>
+        <p class="ee-message full" id="eventMessage" role="status" aria-live="polite"></p>
+      </form>
+      <div class="ee-list-heading"><h2>Event teasers</h2></div>
+      <div class="ee-list" id="eventList"></div>
+    </section>
+
+
+    <section class="ee-panel" id="panel-publish" role="tabpanel" hidden>
+      <div class="ee-section-title"><div><h2>Publish to everyone</h2><p>Send your finished changes live. Every visitor on every device sees the new version within about a minute.</p></div></div>
+      <div class="pro-note" id="pubAccount" role="status">Checking your sign-in…</div>
+      <div class="pro-two">
+        <div class="pro-card">
+          <div class="pro-card-head"><h3>What will go live</h3><span class="pro-muted" id="pubSize"></span></div>
+          <ul class="pro-diff" id="pubSummary"></ul>
+          <label class="pro-field">Note for the history (optional)<input id="pubNote" maxlength="200" placeholder="e.g. Added summer event and new prices"></label>
+          <div class="ee-actions" style="margin-top:12px"><button class="ee-primary" type="button" id="pubPublish" disabled>Publish to everyone</button><button type="button" id="pubRefresh">Check live version</button></div>
+          <div class="pro-links"><a href="games.html?preview=local" target="_blank" rel="noopener">Preview my drafts ↗</a><a href="games.html" target="_blank" rel="noopener">Open live page ↗</a></div>
+          <p class="ee-message" id="pubMessage" role="status" aria-live="polite"></p>
+        </div>
+        <div class="pro-card">
+          <div class="pro-card-head"><h3>Live right now</h3></div>
+          <div id="pubLive" class="pro-muted">Checking…</div>
+          <div class="pro-card-head" style="margin-top:18px"><h3>Version history</h3></div>
+          <ol class="pro-log" id="pubHistory"><li class="pro-muted">Sign in to see history.</li></ol>
+        </div>
+      </div>
+    </section>
+
+    <section class="ee-panel" id="panel-features" role="tabpanel" hidden>
+      <div class="ee-section-title"><div><h2>Features &amp; Refane pricing</h2><p>Decide what players unlock with Refane. <strong>0 = free.</strong> Any number above 0 = costs that many Refane.</p></div></div>
+      <div class="pro-note">Pricing is saved in this browser and shown on the Games branch. Purchases are not enabled yet (same as the Tools branch), so paid features display their price but cannot be bought. Real enforcement will need server-side checks.</div>
+      <div class="pro-tiles" id="featTiles"></div>
+      <form id="featForm" class="ee-form">
+        <input type="hidden" id="featId">
+        <label>Feature name<input id="featName" required maxlength="60" placeholder="e.g. Advanced Analytics"></label>
+        <label>Category<select id="featCategory"><option>Studio</option><option>Planning</option><option>Production</option><option>Analytics</option><option>Community</option><option>Other</option></select></label>
+        <label>Refane price<input id="featPrice" type="number" min="0" max="1000000" step="1" value="0" required><output id="featPricePreview" class="pro-price-preview">Free</output></label>
+        <label class="pro-check-label"><span>Visibility</span><span class="pro-inline"><input id="featEnabled" type="checkbox" checked> Show on the Games branch</span></label>
+        <label class="full">Description<textarea id="featDescription" rows="3" maxlength="300" placeholder="What does the player or creator get?"></textarea></label>
+        <div class="ee-actions full"><button class="ee-primary" type="submit" id="featSave">Add feature</button><button type="button" id="featReset">Clear form</button></div>
+        <p class="ee-message full" id="featMessage" role="status" aria-live="polite"></p>
+      </form>
+      <div class="ee-list-heading"><h2>Feature catalog</h2><div class="ee-actions"><button type="button" id="featAllFree">Make all free</button><button type="button" id="featDefaults" class="ee-danger">Reset to defaults</button></div></div>
+      <div class="ee-list" id="featList"></div>
+    </section>
+
+    <section class="ee-panel" id="panel-patch" role="tabpanel" hidden>
+      <div class="ee-section-title"><div><h2>Patch notes</h2><p>Publish a clear version history. Only published entries appear on the Games branch.</p></div><button type="button" id="patchExport">Download published as Markdown</button></div>
+      <form id="patchForm" class="ee-form">
+        <input type="hidden" id="patchId">
+        <label>Version<input id="patchVersion" required maxlength="20" placeholder="e.g. 1.2.0"></label>
+        <label>Release date<input id="patchDate" type="date" required></label>
+        <label class="full">Title<input id="patchTitle" required maxlength="100" placeholder="e.g. Summer Update"></label>
+        <fieldset class="full pro-tags"><legend>Tags</legend>
+          <label><input type="checkbox" name="patchTag" value="New"> New</label>
+          <label><input type="checkbox" name="patchTag" value="Improved"> Improved</label>
+          <label><input type="checkbox" name="patchTag" value="Fixed"> Fixed</label>
+          <label><input type="checkbox" name="patchTag" value="Balance"> Balance</label>
+          <label><input type="checkbox" name="patchTag" value="Removed"> Removed</label>
+        </fieldset>
+        <label class="full">Changes (one per line)<textarea id="patchBody" rows="6" maxlength="4000" required placeholder="Added a new level editor&#10;Fixed a crash when saving"></textarea></label>
+        <label>Status<select id="patchStatus"><option value="published">Published</option><option value="draft">Draft</option></select></label>
+        <div class="ee-actions full"><button class="ee-primary" type="submit" id="patchSave">Add patch notes</button><button type="button" id="patchReset">Clear form</button></div>
+        <p class="ee-message full" id="patchMessage" role="status" aria-live="polite"></p>
+      </form>
+      <div class="ee-list-heading"><h2>All patch notes</h2></div>
+      <div class="ee-list" id="patchList"></div>
+    </section>
+
+    <section class="ee-panel" id="panel-roadmap" role="tabpanel" hidden>
+      <div class="ee-section-title"><div><h2>Roadmap</h2><p>Show visitors and investors what is shipped, in progress and planned.</p></div></div>
+      <form id="roadForm" class="ee-form">
+        <input type="hidden" id="roadId">
+        <label>Title<input id="roadTitle" required maxlength="80" placeholder="e.g. Multiplayer lobbies"></label>
+        <label>Target<input id="roadQuarter" maxlength="24" placeholder="e.g. Q1 2027"></label>
+        <label>Status<select id="roadStatus"><option value="planned">Planned</option><option value="progress">In progress</option><option value="shipped">Shipped</option><option value="paused">Paused (hidden)</option></select></label>
+        <label class="full">Description<textarea id="roadDescription" rows="3" maxlength="300"></textarea></label>
+        <div class="ee-actions full"><button class="ee-primary" type="submit" id="roadSave">Add roadmap item</button><button type="button" id="roadReset">Clear form</button></div>
+        <p class="ee-message full" id="roadMessage" role="status" aria-live="polite"></p>
+      </form>
+      <div class="ee-list-heading"><h2>Roadmap items</h2></div>
+      <div class="ee-list" id="roadList"></div>
+    </section>
+
+    <section class="ee-panel" id="panel-banner" role="tabpanel" hidden>
+      <div class="ee-section-title"><div><h2>Site banner</h2><p>One short message shown at the top of the Games branch, with an optional expiry.</p></div></div>
+      <form id="bannerForm" class="ee-form">
+        <label class="full">Message<input id="bannerMessage" maxlength="160" placeholder="e.g. Server maintenance on Friday 10:00"></label>
+        <label>Style<select id="bannerStyle"><option value="info">Info</option><option value="success">Success</option><option value="warning">Warning</option></select></label>
+        <label>Expires (optional)<input id="bannerExpires" type="datetime-local"></label>
+        <label class="pro-check-label"><span>Visibility</span><span class="pro-inline"><input id="bannerEnabled" type="checkbox"> Show banner</span></label>
+        <div class="pro-banner-preview full" id="bannerPreviewBox">Banner preview</div>
+        <div class="ee-actions full"><button class="ee-primary" type="submit">Save banner</button><button type="button" id="bannerClear">Remove banner</button></div>
+        <p class="ee-message full" id="bannerMessageOut" role="status" aria-live="polite"></p>
+      </form>
+    </section>
+
+    <section class="ee-panel" id="panel-backup" role="tabpanel" hidden>
+      <div class="ee-section-title"><div><h2>Data &amp; backup</h2><p>Everything here lives in this browser only. Export a backup regularly, and use it to move work to another computer.</p></div></div>
+      <div class="pro-card">
+        <div class="pro-card-head"><h3>Export</h3><span id="backupLast" class="pro-muted">No backup yet</span></div>
+        <p class="pro-muted">Downloads tabs, events, features and prices, patch notes, roadmap, banner, checklist and your Script Studio files as one JSON file.</p>
+        <div class="ee-actions"><button class="ee-primary" type="button" id="backupExport">Download backup (.json)</button></div>
+      </div>
+      <div class="pro-card" style="margin-top:14px">
+        <div class="pro-card-head"><h3>Restore</h3></div>
+        <p class="pro-muted">Importing replaces the matching data in this browser with the contents of the backup file.</p>
+        <div class="ee-actions"><input type="file" id="backupFile" accept="application/json,.json"><button type="button" id="backupImport">Restore from file</button></div>
+        <p class="ee-message" id="backupMessage" role="status" aria-live="polite"></p>
+      </div>
+      <div class="pro-card" style="margin-top:14px">
+        <div class="pro-card-head"><h3>Storage used</h3><strong id="backupSize">0 KB</strong></div>
+        <p class="pro-muted">Browsers allow roughly 5 MB per site. Large event banners use the most space.</p>
+      </div>
+    </section>
+    <footer class="ee-footer">This preview does not publish to GitHub, sync between visitors, or deliver notifications when the site is closed.</footer>
+  </main>
+  <script src="game-employee.js"></script>
+  <script src="script-studio.js"></script>
+  <script src="game-employee-pro.js"></script>
+<script src="../index/kit-bar.js" defer></script>
+</body>
+</html>

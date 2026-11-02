@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <script src="../index/rp-config.js"></script><script src="../index/rp-backend.js"></script><script src="../index/rp-site-loader.js"></script>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Skills Employee Workspace | RP</title>
+  <link rel="stylesheet" href="skills-employee.css">
+<link rel="stylesheet" href="../index/rp-ui.css"><script src="../index/rp-ui.js"></script></head>
+<body>
+  <header class="ed-topbar"><a class="ed-brand" href="../index/index.html">RAKING <span>SKILLS</span></a><a href="skills.html">Skills page</a></header>
+  <main class="ed-main">
+    <div class="ed-alert"><strong>EMPLOYEE WORKSPACE</strong><span>Drafts are stored in this browser. Use the Publish tab to send finished skills and courses to everyone on every device.</span></div>
+    <div class="ed-title"><div><p class="ed-eyebrow">RP SKILLS</p><h1>Employee workspace</h1></div><div class="ed-status-wrap"><button type="button" class="ed-chip" id="edPubChip" title="Open the Publish tab">Checking live site…</button><span id="edStatus" role="status">Local draft storage</span></div></div>
+    <nav class="ed-tabs" aria-label="Skills employee pages">
+      <button type="button" class="active" data-view="dashboard" aria-selected="true">Dashboard</button>
+      <button type="button" data-view="skills" aria-selected="false">Skills</button>
+      <button type="button" data-view="courses" aria-selected="false">Courses</button>
+      <button type="button" data-view="publish" class="ed-publish-tab" aria-selected="false">Publish</button>
+      <button type="button" data-view="tutorial" aria-selected="false">Tutorial</button>
+    </nav>
+
+    <section id="edDashboard" class="ed-view active">
+      <div class="ed-head"><div><h2>Dashboard</h2><p>What is live on the Skills branch and what still needs attention.</p></div></div>
+      <div class="ed-tiles" id="edTiles"></div>
+      <div class="ed-two">
+        <div class="ed-card"><h3>Launch checklist</h3><ul class="ed-check" id="edChecklist"></ul></div>
+        <div class="ed-card"><h3>Backup your drafts</h3><p class="ed-muted">Drafts live only in this browser. Download a backup before clearing browser data or switching computers.</p>
+          <div class="ed-actions"><button type="button" id="edExport">Download backup</button><label class="ed-file">Restore backup<input type="file" id="edImport" accept="application/json"></label></div>
+          <p class="ed-muted" id="edBackupMsg" role="status"></p></div>
+      </div>
+    </section>
+
+    <section id="edSkills" class="ed-view" hidden>
+      <div class="ed-head"><div><h2>Skills</h2><p>A skill is a topic such as Welding or Video Editing. It can require one or more degrees from Education before anyone can open its courses.</p></div></div>
+      <form id="edSkillForm" class="ed-form" novalidate>
+        <input type="hidden" id="edSkillId">
+        <label>Skill name<input id="edSkillName" maxlength="80" placeholder="e.g. Welding"></label>
+        <label>Emoji<input id="edSkillEmoji" maxlength="4" placeholder="🛠️"></label>
+        <label class="wide">Description<textarea id="edSkillDesc" rows="2" maxlength="400" placeholder="What will people be able to do?"></textarea></label>
+        <div class="wide"><span class="ed-lbl">Degrees required for this skill (from Education)</span><div class="ed-checks" id="edSkillRequires"></div><p class="ed-muted" id="edDegreeNote"></p></div>
+        <div class="ed-actions wide"><button class="ed-primary" type="submit" id="edSkillSave">Add skill</button><button type="button" id="edSkillReset">Clear form</button></div>
+        <p class="ed-msg wide" id="edSkillMsg" role="status" aria-live="polite"></p>
+      </form>
+      <div class="ed-list" id="edSkillList"></div>
+    </section>
+
+    <section id="edCourses" class="ed-view" hidden>
+      <div class="ed-head"><div><h2>Courses</h2><p>Courses belong to a skill. There are no grades and no exams: each course is lessons with YouTube videos, notes, documents and links.</p></div></div>
+      <form id="edCourseForm" class="ed-form" novalidate>
+        <input type="hidden" id="edCourseId">
+        <label class="wide">Course title<input id="edTitle" maxlength="120" placeholder="e.g. MIG Welding Basics"></label>
+        <label>Skill<select id="edSkill"></select></label>
+        <label>Emoji<input id="edEmoji" maxlength="4" placeholder="🛠️"></label>
+        <label>Status<select id="edStatus2"><option value="published">Published (visible after you publish)</option><option value="draft">Draft (hidden)</option></select></label>
+        <label class="wide">Description<textarea id="edDesc" rows="3" maxlength="1200" placeholder="What will learners get from this course?"></textarea></label>
+        <label>Refane price to unlock<input id="edPrice" type="number" min="0" max="1000000" step="1" value="0"><output class="ed-price-preview" id="edPricePreview">Free</output></label>
+        <div class="wide"><span class="ed-lbl">Extra degrees required for this course only (optional; the skill's degrees always apply)</span><div class="ed-checks" id="edRequires"></div></div>
+        <div class="wide ed-section"><h3>Lessons</h3><p>Each lesson can have a YouTube video, notes, and its own documents and links. Mark a few as free preview so people can try before unlocking.</p>
+          <div id="edLessons"></div><button type="button" class="ed-mini" id="edAddLesson">＋ Add lesson</button></div>
+        <div class="wide ed-section"><h3>Course materials</h3><p>Guides, cheat sheets, tools and links that help learners master the whole course. Use share links (https only).</p>
+          <div id="edCourseRes"></div><button type="button" class="ed-mini" id="edAddCourseRes">＋ Add document or link</button></div>
+        <div class="ed-actions wide"><button class="ed-primary" type="submit" id="edCourseSave">Add course</button><button type="button" id="edCourseReset">Clear form</button></div>
+        <p class="ed-msg wide" id="edCourseMsg" role="status" aria-live="polite"></p>
+      </form>
+      <div class="ed-head" style="display:flex;justify-content:space-between;align-items:end;gap:10px;flex-wrap:wrap"><h2 style="font-size:17px">Your courses</h2><label class="ed-inline">Show <select id="edFilterSkill"></select></label></div>
+      <div class="ed-list" id="edCourseList"></div>
+    </section>
+
+    <section id="edPublish" class="ed-view" hidden>
+      <div class="ed-head"><div><h2>Publish to everyone</h2><p>Send your finished skills and courses live. Every visitor on every device sees them within about a minute.</p></div></div>
+      <div class="ed-note" id="pubAccount" role="status">Checking your sign-in…</div>
+      <div id="pubProblems"></div>
+      <div class="ed-two">
+        <div class="ed-card">
+          <div class="ed-cardhead"><h3>What will go live</h3><span class="ed-muted" id="pubSize"></span></div>
+          <ul class="ed-diff" id="pubSummary"></ul>
+          <label class="ed-field">Note for the history (optional)<input id="pubNote" maxlength="200" placeholder="e.g. Added Welding skill"></label>
+          <div class="ed-actions"><button class="ed-primary" type="button" id="pubPublish" disabled>Publish to everyone</button><button type="button" id="pubRefresh">Check live version</button></div>
+          <div class="ed-links"><a href="skills.html?preview=local" target="_blank" rel="noopener">Preview my drafts ↗</a><a href="skills.html" target="_blank" rel="noopener">Open live page ↗</a></div>
+          <p class="ed-msg" id="pubMessage" role="status" aria-live="polite"></p>
+        </div>
+        <div class="ed-card">
+          <div class="ed-cardhead"><h3>Live right now</h3></div>
+          <div id="pubLive" class="ed-muted">Checking…</div>
+          <div class="ed-cardhead" style="margin-top:18px"><h3>Version history</h3></div>
+          <ol class="ed-log" id="pubHistory"><li class="ed-muted">Sign in to see history.</li></ol>
+        </div>
+      </div>
+    </section>
+
+    <section id="edTutorial" class="ed-view" hidden>
+      <div class="ed-head"><div><h2>Skills Employee Tutorial</h2><p>Create skills, require degrees, build courses and publish.</p></div></div>
+      <div class="ed-tutorial">
+        <h3>1. Degrees come from Education</h3>
+        <ol><li>Degrees are created and published by the Education team. They appear here automatically once published. If the list is empty, ask Education to publish their degrees first.</li></ol>
+        <h3>2. Create a skill</h3>
+        <ol><li>Open <strong>Skills</strong>, name the skill and tick the <strong>degrees required</strong> for it. A learner must hold all ticked degrees to open any course in that skill.</li></ol>
+        <h3>3. Build courses</h3>
+        <ol><li>Open <strong>Courses</strong>, pick the skill, and add lessons: a YouTube link, notes, and documents or links. Tick <strong>Free preview</strong> to let anyone watch a lesson.</li>
+          <li>Optionally set a <strong>Refane price</strong> (0 = free) and extra degrees for just this course. There are no exams in Skills.</li></ol>
+        <h3>4. Publish</h3>
+        <ol><li>Open <strong>Publish</strong>, check the summary and publish. Locked course content is stored privately on the server and opens only after the learner passes the degree check and pays.</li></ol>
+      </div>
+    </section>
+    <footer class="ed-footer">Drafts stay in this browser until you publish. Publishing needs a Skills employee account.</footer>
+  </main>
+  <script src="skills-employee.js"></script>
+<script src="../index/kit-bar.js" defer></script>
+</body>
+</html>

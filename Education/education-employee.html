@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <script src="../index/rp-config.js"></script><script src="../index/rp-backend.js"></script><script src="../index/rp-site-loader.js"></script>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Education Employee Workspace | RP</title>
+  <link rel="stylesheet" href="education-employee.css">
+<link rel="stylesheet" href="../index/rp-ui.css"><script src="../index/rp-ui.js"></script></head>
+<body>
+  <header class="ed-topbar"><a class="ed-brand" href="../index/index.html">RAKING <span>EDUCATION</span></a><a href="education.html">Education page</a></header>
+  <main class="ed-main">
+    <div class="ed-alert"><strong>EMPLOYEE WORKSPACE</strong><span>Drafts are stored in this browser. Use the Publish tab to send finished courses and degrees to everyone on every device.</span></div>
+    <div class="ed-title"><div><p class="ed-eyebrow">RP EDUCATION</p><h1>Employee workspace</h1></div><div class="ed-status-wrap"><button type="button" class="ed-chip" id="edPubChip" title="Open the Publish tab">Checking live site…</button><span id="edStatus" role="status">Local draft storage</span></div></div>
+    <nav class="ed-tabs" aria-label="Education employee pages">
+      <button type="button" class="active" data-view="dashboard" aria-selected="true">Dashboard</button>
+      <button type="button" data-view="courses" aria-selected="false">Courses</button>
+      <button type="button" data-view="degrees" aria-selected="false">Degrees</button>
+      <button type="button" data-view="publish" class="ed-publish-tab" aria-selected="false">Publish</button>
+      <button type="button" data-view="tutorial" aria-selected="false">Tutorial</button>
+    </nav>
+
+    <section id="edDashboard" class="ed-view active">
+      <div class="ed-head"><div><h2>Dashboard</h2><p>What is live on the Education branch and what still needs attention.</p></div></div>
+      <div class="ed-tiles" id="edTiles"></div>
+      <div class="ed-two">
+        <div class="ed-card"><h3>Launch checklist</h3><ul class="ed-check" id="edChecklist"></ul></div>
+        <div class="ed-card"><h3>Backup your drafts</h3><p class="ed-muted">Drafts live only in this browser. Download a backup before clearing browser data or switching computers.</p>
+          <div class="ed-actions"><button type="button" id="edExport">Download backup</button><label class="ed-file">Restore backup<input type="file" id="edImport" accept="application/json"></label></div>
+          <p class="ed-muted" id="edBackupMsg" role="status"></p></div>
+      </div>
+    </section>
+
+    <section id="edCourses" class="ed-view" hidden>
+      <div class="ed-head"><div><h2>Courses</h2><p>Build a course for a grade, college or university. Add lessons with YouTube videos, notes, documents and links, then a final exam that awards a degree.</p></div></div>
+      <form id="edCourseForm" class="ed-form" novalidate>
+        <input type="hidden" id="edCourseId">
+        <label class="wide">Course title<input id="edTitle" maxlength="120" placeholder="e.g. Algebra Foundations"></label>
+        <label>Level<select id="edLevel"></select></label>
+        <label>Subject<input id="edSubject" maxlength="60" list="edSubjects" placeholder="e.g. Mathematics"><datalist id="edSubjects"><option>Mathematics</option><option>Science</option><option>English</option><option>History</option><option>Computer Science</option><option>Business</option><option>Art</option><option>Languages</option></datalist></label>
+        <label>Emoji<input id="edEmoji" maxlength="4" placeholder="📘"></label>
+        <label>Status<select id="edStatus2"><option value="published">Published (visible after you publish)</option><option value="draft">Draft (hidden)</option></select></label>
+        <label class="wide">Description<textarea id="edDesc" rows="3" maxlength="1200" placeholder="What will students learn?"></textarea></label>
+        <label>Refane price to unlock<input id="edPrice" type="number" min="0" max="1000000" step="1" value="0"><output class="ed-price-preview" id="edPricePreview">Free</output></label>
+        <label>Final exam pass mark (%)<input id="edPass" type="number" min="1" max="100" step="1" value="70"></label>
+        <div class="wide"><span class="ed-lbl">Degrees students must already hold to unlock (optional)</span><div class="ed-checks" id="edRequires"></div></div>
+        <label class="wide">Degree awarded when the student passes the final exam<select id="edDegree"></select></label>
+
+        <div class="wide ed-section"><h3>Lessons</h3><p>Each lesson can have a YouTube video, notes, and its own documents and links. Mark a few lessons as a free preview so students can try the course before paying.</p>
+          <div id="edLessons"></div><button type="button" class="ed-mini" id="edAddLesson">＋ Add lesson</button></div>
+        <div class="wide ed-section"><h3>Course materials</h3><p>Textbooks, syllabus, cheat sheets and links that help students master the whole course. Use a share link (for example Google Drive or a PDF address).</p>
+          <div id="edCourseRes"></div><button type="button" class="ed-mini" id="edAddCourseRes">＋ Add document or link</button></div>
+        <div class="wide ed-section"><h3>Final exam</h3><p>Multiple choice. Graded on the server, so answers are never visible to students. Needed if this course awards a degree.</p>
+          <div id="edExam"></div><button type="button" class="ed-mini" id="edAddQ">＋ Add question</button></div>
+
+        <div class="ed-actions wide"><button class="ed-primary" type="submit" id="edCourseSave">Add course</button><button type="button" id="edCourseReset">Clear form</button></div>
+        <p class="ed-msg wide" id="edCourseMsg" role="status" aria-live="polite"></p>
+      </form>
+      <div class="ed-head" style="display:flex;justify-content:space-between;align-items:end;gap:10px;flex-wrap:wrap"><h2 style="font-size:17px">Your courses</h2><label class="ed-inline">Show <select id="edFilterLevel"></select></label></div>
+      <div class="ed-list" id="edCourseList"></div>
+    </section>
+
+    <section id="edDegrees" class="ed-view" hidden>
+      <div class="ed-head"><div><h2>Degrees</h2><p>Credentials students earn by passing a course's final exam. Courses can require degrees (for example a university course that needs a Grade 12 certificate).</p></div></div>
+      <form id="edDegreeForm" class="ed-form">
+        <input type="hidden" id="edDegreeId">
+        <label>Degree name<input id="edDegName" maxlength="80" required placeholder="e.g. Grade 8 Mathematics Certificate"></label>
+        <label>Level<select id="edDegLevel"></select></label>
+        <label>Emoji<input id="edDegEmoji" maxlength="4" placeholder="📜"></label>
+        <label class="wide">Description (optional)<input id="edDegDesc" maxlength="200" placeholder="What does this degree prove?"></label>
+        <div class="ed-actions wide"><button class="ed-primary" type="submit" id="edDegSave">Add degree</button><button type="button" id="edDegReset">Clear form</button></div>
+        <p class="ed-msg wide" id="edDegMsg" role="status" aria-live="polite"></p>
+      </form>
+      <div class="ed-list" id="edDegreeList"></div>
+    </section>
+
+    <section id="edPublish" class="ed-view" hidden>
+      <div class="ed-head"><div><h2>Publish to everyone</h2><p>Send your finished courses and degrees live. Every visitor on every device sees them within about a minute.</p></div></div>
+      <div class="ed-note" id="pubAccount" role="status">Checking your sign-in…</div>
+      <div id="pubProblems"></div>
+      <div class="ed-two">
+        <div class="ed-card">
+          <div class="ed-cardhead"><h3>What will go live</h3><span class="ed-muted" id="pubSize"></span></div>
+          <ul class="ed-diff" id="pubSummary"></ul>
+          <label class="ed-field">Note for the history (optional)<input id="pubNote" maxlength="200" placeholder="e.g. Added Grade 9 Biology"></label>
+          <div class="ed-actions"><button class="ed-primary" type="button" id="pubPublish" disabled>Publish to everyone</button><button type="button" id="pubRefresh">Check live version</button></div>
+          <div class="ed-links"><a href="education.html?preview=local" target="_blank" rel="noopener">Preview my drafts ↗</a><a href="education.html" target="_blank" rel="noopener">Open live page ↗</a></div>
+          <p class="ed-msg" id="pubMessage" role="status" aria-live="polite"></p>
+        </div>
+        <div class="ed-card">
+          <div class="ed-cardhead"><h3>Live right now</h3></div>
+          <div id="pubLive" class="ed-muted">Checking…</div>
+          <div class="ed-cardhead" style="margin-top:18px"><h3>Version history</h3></div>
+          <ol class="ed-log" id="pubHistory"><li class="ed-muted">Sign in to see history.</li></ol>
+        </div>
+      </div>
+    </section>
+
+    <section id="edTutorial" class="ed-view" hidden>
+      <div class="ed-head"><div><h2>Education Employee Tutorial</h2><p>Create degrees, build courses, set prices and publish.</p></div></div>
+      <div class="ed-tutorial">
+        <h3>1. Create degrees first</h3>
+        <ol><li>Open <strong>Degrees</strong> and add the credentials your courses will award, for example “Grade 8 Mathematics Certificate” or “BSc Computing”.</li></ol>
+        <h3>2. Build a course</h3>
+        <ol><li>Open <strong>Courses</strong>. Choose the <strong>Level</strong>: Grade 1 to Grade 12, College or University.</li>
+          <li>Add <strong>Lessons</strong>. Paste a YouTube link, write the notes, and attach documents or links. Tick <strong>Free preview</strong> on a lesson to let anyone watch it.</li>
+          <li>Add <strong>Course materials</strong> (textbooks, cheat sheets, syllabus links).</li>
+          <li>Add the <strong>Final exam</strong> questions and choose the correct answer for each. Set the pass mark.</li></ol>
+        <h3>3. Set price and requirements</h3>
+        <ol><li><strong>Refane price: 0 = free.</strong> Any number above 0 is charged from the student's Refane balance when they unlock the course.</li>
+          <li>Tick <strong>required degrees</strong> to lock a course until the student has earned them. You can combine a price and required degrees.</li>
+          <li>Choose the <strong>degree awarded</strong>. Students earn it when they pass the final exam.</li></ol>
+        <h3>4. Publish</h3>
+        <ol><li>Open <strong>Publish</strong>, check the summary and publish. Use <strong>Preview my drafts</strong> first to see the real page.</li>
+          <li>Paid and degree-gated course content (videos, notes, documents, exam questions) is stored privately on the server and only opens for students who unlocked the course. Exam answers are never sent to students.</li></ol>
+      </div>
+    </section>
+    <footer class="ed-footer">Drafts stay in this browser until you publish. Publishing needs an Education employee account.</footer>
+  </main>
+  <script src="education-employee.js"></script>
+<script src="../index/kit-bar.js" defer></script>
+</body>
+</html>

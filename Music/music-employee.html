@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <script src="../index/rp-config.js"></script><script src="../index/rp-backend.js"></script><script src="../index/rp-site-loader.js"></script>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Music Employee Workspace | RP</title>
+  <link rel="stylesheet" href="music-employee.css">
+<link rel="stylesheet" href="../index/rp-ui.css"><script src="../index/rp-ui.js"></script></head>
+<body>
+  <header class="me-topbar"><a class="me-brand" href="../index/index.html">RAKING <span>MUSIC</span></a><a href="music.html">Music page</a></header>
+  <main class="me-main">
+    <div class="me-alert"><strong>EMPLOYEE WORKSPACE</strong><span>Drafts are stored in this browser. Use the Publish tab to send finished work to everyone on every device.</span></div>
+    <div class="me-title"><div><p class="me-eyebrow">RP MUSIC</p><h1>Employee workspace</h1></div><div class="me-status-wrap"><button type="button" class="me-chip" id="mePubChip" title="Open the Publish tab">Checking live site…</button><span id="meStatus" role="status">Local draft storage</span></div></div>
+    <nav class="me-tabs" aria-label="Music employee pages">
+      <button type="button" class="active" data-view="dashboard" aria-selected="true">Dashboard</button>
+      <button type="button" data-view="tracks" aria-selected="false">Featured tracks</button>
+      <button type="button" data-view="beats" aria-selected="false">Beat presets</button>
+      <button type="button" data-view="features" aria-selected="false">Features &amp; Refane pricing</button>
+      <button type="button" data-view="releases" aria-selected="false">Upcoming releases</button>
+      <button type="button" data-view="banner" aria-selected="false">Site banner</button>
+      <button type="button" data-view="publish" class="me-publish-tab" aria-selected="false">Publish</button>
+      <button type="button" data-view="tutorial" aria-selected="false">Tutorial</button>
+    </nav>
+
+    <section id="meDashboard" class="me-view active">
+      <div class="me-head"><div><h2>Dashboard</h2><p>What is live on the Music branch and what still needs attention.</p></div></div>
+      <div class="me-tiles" id="meTiles"></div>
+      <div class="me-two">
+        <div class="me-card"><h3>Launch checklist</h3><ul class="me-check" id="meChecklist"></ul></div>
+        <div class="me-card"><h3>Backup your drafts</h3><p class="me-muted">Drafts live only in this browser. Download a backup before clearing browser data or switching computers.</p>
+          <div class="me-actions"><button type="button" id="meExport">Download backup</button><label class="me-file">Restore backup<input type="file" id="meImport" accept="application/json"></label></div>
+          <p class="me-muted" id="meBackupMsg" role="status"></p></div>
+      </div>
+    </section>
+
+    <section id="meTracks" class="me-view" hidden>
+      <div class="me-head"><div><h2>Featured tracks</h2><p>Tracks chosen by RP Music. They appear at the top of the Showcase for everyone.</p></div></div>
+      <form id="meTrackForm" class="me-form">
+        <input type="hidden" id="meTrackId">
+        <label>Track title<input id="meTrackTitle" maxlength="80" required placeholder="e.g. Midnight Drive"></label>
+        <label>Artist<input id="meTrackArtist" maxlength="60" required placeholder="Artist name"></label>
+        <label>Genre<select id="meTrackGenre"><option>Lo-Fi</option><option>Electronic</option><option>Hip-Hop</option><option>Pop</option><option>Rock</option><option>Ambient</option><option>Other</option></select></label>
+        <label>Emoji<input id="meTrackEmoji" maxlength="4" placeholder="🎧"></label>
+        <label class="wide">Track link (YouTube, SoundCloud or any https link)<input id="meTrackLink" maxlength="400" required placeholder="https://"></label>
+        <label class="wide">Why we picked it (optional)<textarea id="meTrackNote" rows="2" maxlength="200"></textarea></label>
+        <label>Refane price<input id="meTrackPrice" type="number" min="0" max="1000000" step="1" value="0"><output class="me-price-preview" id="meTrackPricePreview">Free</output></label>
+        <label>Status<select id="meTrackStatus"><option value="published">Published (visible after you publish)</option><option value="draft">Draft (hidden)</option></select></label>
+        <div class="me-actions wide"><button class="me-primary" type="submit" id="meTrackSave">Add track</button><button type="button" id="meTrackReset">Clear form</button></div>
+        <p class="me-msg wide" id="meTrackMsg" role="status" aria-live="polite"></p>
+      </form>
+      <div class="me-list" id="meTrackList"></div>
+    </section>
+
+    <section id="meBeats" class="me-view" hidden>
+      <div class="me-head"><div><h2>Beat presets</h2><p>Build official beats. Visitors can load them into the Studio sequencer with one click.</p></div></div>
+      <form id="meBeatForm" class="me-form">
+        <input type="hidden" id="meBeatId">
+        <label>Beat name<input id="meBeatName" maxlength="50" required placeholder="e.g. Boom Bap Starter"></label>
+        <label>Tempo <output id="meBeatBpmOut">100 BPM</output><input id="meBeatBpm" type="range" min="60" max="180" value="100"></label>
+        <label class="wide">Description (optional)<input id="meBeatDesc" maxlength="140" placeholder="One line about the feel"></label>
+        <div class="wide"><div id="meSeq" class="me-seq" aria-label="Beat sequencer"></div>
+          <div class="me-actions"><button type="button" id="meBeatPlay">▶ Play</button><button type="button" id="meBeatClear">Clear steps</button></div></div>
+        <label>Refane price<input id="meBeatPrice" type="number" min="0" max="1000000" step="1" value="0"><output class="me-price-preview" id="meBeatPricePreview">Free</output></label>
+        <label>Status<select id="meBeatStatus"><option value="published">Published (visible after you publish)</option><option value="draft">Draft (hidden)</option></select></label>
+        <div class="me-actions wide"><button class="me-primary" type="submit" id="meBeatSave">Add beat</button><button type="button" id="meBeatReset">Clear form</button></div>
+        <p class="me-msg wide" id="meBeatMsg" role="status" aria-live="polite"></p>
+      </form>
+      <div class="me-list" id="meBeatList"></div>
+    </section>
+
+    <section id="meFeatures" class="me-view" hidden>
+      <div class="me-head"><div><h2>Features &amp; Refane pricing</h2><p>Decide what visitors unlock with Refane. <strong>0 = free.</strong> Any number above 0 costs that many Refane. Tracks and beats have their own price field too.</p></div></div>
+      <div class="me-note">Prices are shown on the Music page. Purchases are not enabled yet (same as Games and Tools), so paid items display their price but cannot be bought. Real enforcement will need server-side checks.</div>
+      <div class="me-tiles" id="meFeatTiles"></div>
+      <form id="meFeatForm" class="me-form">
+        <input type="hidden" id="meFeatId">
+        <label>Feature name<input id="meFeatName" maxlength="60" required placeholder="e.g. Extra Drum Kits"></label>
+        <label>Category<select id="meFeatCategory"><option>Studio</option><option>Library</option><option>Showcase</option><option>Community</option><option>Other</option></select></label>
+        <label>Refane price<input id="meFeatPrice" type="number" min="0" max="1000000" step="1" value="0" required><output class="me-price-preview" id="meFeatPricePreview">Free</output></label>
+        <label class="me-inline"><input id="meFeatEnabled" type="checkbox" checked> Show on the Music page</label>
+        <label class="wide">Description<textarea id="meFeatDesc" rows="2" maxlength="300" placeholder="What does the visitor get?"></textarea></label>
+        <div class="me-actions wide"><button class="me-primary" type="submit" id="meFeatSave">Add feature</button><button type="button" id="meFeatReset">Clear form</button></div>
+        <p class="me-msg wide" id="meFeatMsg" role="status" aria-live="polite"></p>
+      </form>
+      <div class="me-head" style="display:flex;justify-content:space-between;align-items:center;gap:10px"><h2 style="font-size:17px">Feature catalog</h2><div class="me-actions"><button type="button" id="meFeatAllFree">Make all free</button><button type="button" id="meFeatDefaults">Reset to defaults</button></div></div>
+      <div class="me-list" id="meFeatList"></div>
+    </section>
+
+    <section id="meReleases" class="me-view" hidden>
+      <div class="me-head"><div><h2>Upcoming releases</h2><p>Tease a drop. It appears in "Coming soon" on the Music page.</p></div></div>
+      <form id="meRelForm" class="me-form">
+        <input type="hidden" id="meRelId">
+        <label>Banner image<input id="meRelBanner" type="file" accept="image/png,image/jpeg,image/webp"></label>
+        <div id="meRelPreview" class="me-banner-preview">Banner preview</div>
+        <label>Release name<input id="meRelName" maxlength="100" required></label>
+        <label>Subtitle<input id="meRelSub" maxlength="140"></label>
+        <label class="wide">Description<textarea id="meRelDesc" rows="3" maxlength="1200" required></textarea></label>
+        <label>Release date<input id="meRelDate" type="datetime-local" required></label>
+        <label>Status<select id="meRelStatus"><option value="published">Published (visible after you publish)</option><option value="draft">Draft (hidden)</option></select></label>
+        <div class="me-actions wide"><button class="me-primary" type="submit" id="meRelSave">Add release</button><button type="button" id="meRelReset">Clear form</button></div>
+        <p class="me-msg wide" id="meRelMsg" role="status" aria-live="polite"></p>
+      </form>
+      <div class="me-list" id="meRelList"></div>
+    </section>
+
+    <section id="meBanner" class="me-view" hidden>
+      <div class="me-head"><div><h2>Site banner</h2><p>A short message shown at the top of the Music page.</p></div></div>
+      <form id="meBannerForm" class="me-form">
+        <label class="wide">Message<input id="meBannerMsgText" maxlength="160" placeholder="e.g. New beat presets are live!"></label>
+        <label>Style<select id="meBannerStyle"><option value="info">Info</option><option value="success">Success</option><option value="warning">Warning</option></select></label>
+        <label>Hide after (optional)<input id="meBannerExpires" type="datetime-local"></label>
+        <label class="me-inline wide"><input id="meBannerOn" type="checkbox"> Show the banner</label>
+        <div class="me-actions wide"><button class="me-primary" type="submit">Save banner</button></div>
+        <p class="me-msg wide" id="meBannerMsg" role="status" aria-live="polite"></p>
+      </form>
+      <div class="me-card"><h3>Preview</h3><div id="meBannerPreview" class="me-bannerbar info">Nothing to show.</div></div>
+    </section>
+
+    <section id="mePublish" class="me-view" hidden>
+      <div class="me-head"><div><h2>Publish to everyone</h2><p>Send your finished changes live. Every visitor on every device sees them within about a minute.</p></div></div>
+      <div class="me-note" id="pubAccount" role="status">Checking your sign-in…</div>
+      <div class="me-two">
+        <div class="me-card">
+          <div class="me-cardhead"><h3>What will go live</h3><span class="me-muted" id="pubSize"></span></div>
+          <ul class="me-diff" id="pubSummary"></ul>
+          <label class="me-field">Note for the history (optional)<input id="pubNote" maxlength="200" placeholder="e.g. Added lo-fi beat pack"></label>
+          <div class="me-actions"><button class="me-primary" type="button" id="pubPublish" disabled>Publish to everyone</button><button type="button" id="pubRefresh">Check live version</button></div>
+          <div class="me-links"><a href="music.html?preview=local" target="_blank" rel="noopener">Preview my drafts ↗</a><a href="music.html" target="_blank" rel="noopener">Open live page ↗</a></div>
+          <p class="me-msg" id="pubMessage" role="status" aria-live="polite"></p>
+        </div>
+        <div class="me-card">
+          <div class="me-cardhead"><h3>Live right now</h3></div>
+          <div id="pubLive" class="me-muted">Checking…</div>
+          <div class="me-cardhead" style="margin-top:18px"><h3>Version history</h3></div>
+          <ol class="me-log" id="pubHistory"><li class="me-muted">Sign in to see history.</li></ol>
+        </div>
+      </div>
+    </section>
+
+    <section id="meTutorial" class="me-view" hidden>
+      <div class="me-head"><div><h2>Music Employee Tutorial</h2><p>Curate, build, tease and publish.</p></div></div>
+      <div class="me-tutorial">
+        <h3>Feature a track</h3>
+        <ol><li>Open <strong>Featured tracks</strong>, enter title, artist, genre and a YouTube or SoundCloud link, then press <strong>Add track</strong>.</li><li>Set the status to <strong>Draft</strong> to hide it until it is ready.</li></ol>
+        <h3>Build a beat preset</h3>
+        <ol><li>Open <strong>Beat presets</strong>, name the beat, set the tempo and click steps in the grid. Press <strong>Play</strong> to hear it.</li><li>Press <strong>Add beat</strong>. Visitors can load it into the Studio sequencer.</li></ol>
+        <h3>Set Refane prices</h3>
+        <ol><li>Open <strong>Features &amp; Refane pricing</strong>. <strong>0 means free</strong>; any number above 0 costs that many Refane. Edit a price in the catalog and it is saved right away.</li><li>Tracks and beat presets have their own <strong>Refane price</strong> field. Prices are informational until purchases are enabled.</li></ol>
+        <h3>Tease a release and set a banner</h3>
+        <ol><li>Use <strong>Upcoming releases</strong> for drops with a banner image and release date.</li><li>Use <strong>Site banner</strong> for a one-line announcement at the top of the page.</li></ol>
+        <h3>Publish</h3>
+        <ol><li>Open <strong>Publish</strong>. Sign in on the main page with an account that has the Music Employee, Music Studio Director or Creator role.</li><li>Check what changed, add a note and press <strong>Publish to everyone</strong>. You can restore any earlier version from the history.</li><li>Use <strong>Preview my drafts</strong> to see your drafts on the real page before publishing.</li></ol>
+      </div>
+    </section>
+    <footer class="me-footer">Drafts stay in this browser until you publish. Publishing needs a Music employee account.</footer>
+  </main>
+  <script src="music-employee.js"></script>
+<script src="../index/kit-bar.js" defer></script>
+</body>
+</html>

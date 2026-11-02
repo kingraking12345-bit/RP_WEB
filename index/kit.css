@@ -1,0 +1,36 @@
+:root{--bg:#050b16;--panel:#0c1830;--panel2:#10203f;--border:rgba(120,170,255,.18);--text:#e8f1ff;--muted:#8fa6c8;--cyan:#2ee6e6;--blue:#3b82f6;--green:#34d399;--red:#f87171;--amber:#fbbf24;--accent:#2ee6e6}
+@media(prefers-color-scheme:light){:root.auto{--bg:#f4f7fc;--panel:#fff;--panel2:#eef3fb;--border:rgba(30,60,120,.18);--text:#0d1b33;--muted:#546784}}
+*{box-sizing:border-box}html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--text);font:16px/1.6 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+a{color:var(--cyan)}
+.k-top{position:sticky;top:0;z-index:20;display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:10px 16px;background:rgba(5,11,22,.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--border)}
+.k-top .brand{font-weight:800;letter-spacing:.06em;color:var(--cyan);text-decoration:none}
+.k-top nav{display:flex;gap:6px;flex-wrap:wrap;flex:1}
+.k-top nav a,.k-pill{padding:6px 12px;border:1px solid var(--border);border-radius:99px;color:var(--text);text-decoration:none;font-size:.88rem;background:var(--panel);cursor:pointer;font-family:inherit}
+.k-top nav a.on,.k-pill.on{border-color:var(--cyan);background:rgba(46,230,230,.14);color:var(--cyan)}
+.k-wrap{max-width:1100px;margin:0 auto;padding:22px 16px 70px}
+h1,h2,h3{line-height:1.2}h1{font-size:clamp(1.7rem,4vw,2.5rem);margin:.2em 0}
+.k-card{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:18px;margin:0 0 16px}
+.k-muted{color:var(--muted)}
+.k-btn{background:linear-gradient(135deg,var(--cyan),var(--blue));color:#04101f;border:0;padding:10px 18px;border-radius:10px;font-weight:700;cursor:pointer;font:inherit;font-weight:700}
+.k-btn.ghost{background:var(--panel2);color:var(--cyan);border:1px solid var(--cyan)}.k-btn.danger{background:var(--red);color:#2b0505}
+.k-btn:disabled{opacity:.5;cursor:not-allowed}
+input,select,textarea{width:100%;background:var(--panel2);border:1px solid var(--border);color:var(--text);padding:10px;border-radius:8px;font:inherit}
+textarea{min-height:100px;resize:vertical}label{display:grid;gap:5px;font-size:.85rem;color:var(--muted);margin:0 0 12px}
+.k-row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}.k-grid{display:grid;gap:14px;grid-template-columns:repeat(auto-fill,minmax(250px,1fr))}
+.k-msg{min-height:1.4em;font-size:.92rem}.k-msg.err{color:var(--red)}.k-msg.ok{color:var(--green)}
+.k-split{display:grid;grid-template-columns:260px minmax(0,1fr);gap:18px;align-items:start}
+@media(max-width:800px){.k-split{grid-template-columns:1fr}}
+.k-side{position:sticky;top:70px;display:grid;gap:6px}
+.k-side button{text-align:left;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--panel);color:var(--text);cursor:pointer;font:inherit}
+.k-side button.on{border-color:var(--cyan);background:rgba(46,230,230,.12);color:var(--cyan)}
+.k-md h2{font-size:1.3rem;margin:1.2em 0 .3em}.k-md h3{font-size:1.1rem}.k-md p{margin:.5em 0}.k-md ul{padding-left:1.3em}
+.k-badge{display:inline-block;padding:2px 9px;border-radius:99px;font-size:.75rem;background:rgba(46,230,230,.14);color:var(--cyan)}
+.k-badge.pending{background:rgba(251,191,36,.16);color:var(--amber)}.k-badge.accepted{background:rgba(52,211,153,.16);color:var(--green)}.k-badge.rejected{background:rgba(248,113,113,.16);color:var(--red)}
+.k-bar{position:fixed;right:14px;bottom:14px;z-index:9999;font:14px system-ui,sans-serif}
+.k-bar>button{background:linear-gradient(135deg,#2ee6e6,#3b82f6);color:#04101f;border:0;border-radius:99px;padding:10px 16px;font-weight:800;cursor:pointer;box-shadow:0 6px 24px rgba(0,0,0,.45)}
+.k-bar .k-menu{position:absolute;right:0;bottom:48px;min-width:230px;background:#0c1830;border:1px solid rgba(120,170,255,.3);border-radius:14px;padding:8px;display:grid;gap:2px;box-shadow:0 12px 40px rgba(0,0,0,.6)}
+.k-bar .k-menu[hidden]{display:none}
+.k-bar .k-menu a{color:#e8f1ff;text-decoration:none;padding:8px 12px;border-radius:8px;display:flex;justify-content:space-between;gap:10px}.k-bar .k-menu a:hover{background:rgba(46,230,230,.14)}
+.k-bar .k-menu hr{border:0;border-top:1px solid rgba(120,170,255,.2);margin:4px 0;width:100%}
+.k-dot{background:#f87171;color:#fff;border-radius:99px;padding:0 7px;font-size:.75rem;font-weight:700}

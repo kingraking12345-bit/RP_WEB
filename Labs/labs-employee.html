@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <script src="../index/rp-config.js"></script><script src="../index/rp-backend.js"></script><script src="../index/rp-site-loader.js"></script>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Labs Employee Workspace | RP</title>
+  <link rel="stylesheet" href="labs-employee.css">
+<link rel="stylesheet" href="../index/rp-ui.css"><script src="../index/rp-ui.js"></script></head>
+<body>
+  <header class="ed-topbar"><a class="ed-brand" href="../index/index.html">RAKING <span>LABS</span></a><a href="labs.html">Labs page</a></header>
+  <main class="ed-main">
+    <div class="ed-alert"><strong>SCIENTIST WORKBENCH</strong><span>Drafts are stored in this browser. Scripts run in a locked sandbox. Use the Publish tab to send finished labs, experiments and papers to everyone.</span></div>
+    <div class="ed-title"><div><p class="ed-eyebrow">RP LABS</p><h1>Scientist workbench</h1></div><div class="ed-status-wrap"><button type="button" class="ed-chip" id="edPubChip" title="Open the Publish tab">Checking live site…</button><span id="edStatus" role="status">Local draft storage</span></div></div>
+    <nav class="ed-tabs" aria-label="Labs employee pages">
+      <button type="button" class="active" data-view="dashboard" aria-selected="true">Dashboard</button>
+      <button type="button" data-view="labs" aria-selected="false">Labs</button>
+      <button type="button" data-view="experiments" aria-selected="false">Experiment studio</button>
+      <button type="button" data-view="papers" aria-selected="false">Papers</button>
+      <button type="button" data-view="publish" class="ed-publish-tab" aria-selected="false">Publish</button>
+      <button type="button" data-view="tutorial" aria-selected="false">Tutorial</button>
+    </nav>
+
+    <section id="edDashboard" class="ed-view active">
+      <div class="ed-head"><div><h2>Dashboard</h2><p>What is live on the Labs branch and what still needs attention.</p></div></div>
+      <div class="ed-tiles" id="edTiles"></div>
+      <div class="ed-two">
+        <div class="ed-card"><h3>Launch checklist</h3><ul class="ed-check" id="edChecklist"></ul>
+          <div class="ed-actions" style="margin-top:12px"><button type="button" class="ed-primary" id="edStarter">Import starter pack</button></div>
+          <p class="ed-muted" id="edStarterMsg" role="status">Adds 4 labs, 12 working experiments and 2 sample papers. Nothing you already made is overwritten.</p></div>
+        <div class="ed-card"><h3>Backup your drafts</h3><p class="ed-muted">Drafts live only in this browser. Download a backup before clearing browser data or switching computers.</p>
+          <div class="ed-actions"><button type="button" id="edExport">Download backup</button><label class="ed-file">Restore backup<input type="file" id="edImport" accept="application/json"></label></div>
+          <p class="ed-muted" id="edBackupMsg" role="status"></p></div>
+      </div>
+    </section>
+
+    <section id="edLabs" class="ed-view" hidden>
+      <div class="ed-head"><div><h2>Labs</h2><p>A lab is a themed room such as Physics, Biology or Chemistry. Experiments and papers belong to a lab.</p></div></div>
+      <form id="edLabForm" class="ed-form" novalidate>
+        <input type="hidden" id="edLabId">
+        <label>Lab name<input id="edLabName" maxlength="80" placeholder="e.g. Physics Lab"></label>
+        <label>Emoji<input id="edLabEmoji" maxlength="4" placeholder="⚛️"></label>
+        <label>Accent colour<input id="edLabColor" type="color" value="#60a5fa"></label>
+        <label class="wide">Description<textarea id="edLabDesc" rows="2" maxlength="300" placeholder="What do scientists do here?"></textarea></label>
+        <div class="ed-actions wide"><button class="ed-primary" type="submit" id="edLabSave">Add lab</button><button type="button" id="edLabReset">Clear form</button></div>
+        <p class="ed-msg wide" id="edLabMsg" role="status" aria-live="polite"></p>
+      </form>
+      <div class="ed-list" id="edLabList"></div>
+    </section>
+
+    <section id="edExperiments" class="ed-view" hidden>
+      <div class="ed-head"><div><h2>Experiment studio</h2><p>Write an experiment as a JavaScript function of its parameters, test-run it live, then publish. Visitors get sliders and a Run button.</p></div></div>
+      <details class="lb-ref"><summary>Script reference (what you can use)</summary>
+<pre>// Your script receives  params  (the slider values)  and  Lab  (helpers). It must  return  a result:
+return {
+  charts: [{ title, xLabel, yLabel, logY: false,
+             series: [{ name, x: [...], y: [...], style: "line" | "points" | "bars" }] }],
+  metrics: { speed: { label: "Top speed", value: 12.3, unit: "m/s" } },   // or  speed: 12.3
+  table: { columns: ["a","b"], rows: [[1,2],[3,4]] },                     // optional
+  notes: "Shown under the results"                                         // optional
+};
+Lab.constants   g, c, G, kB, NA, R, h, e                Lab.rng(seed) -> () =&gt; 0..1   Lab.normal(rng, mean, sd)
+Lab.sum  mean  std  min  max  round(v, digits)           Lab.linspace(a,b,n)   Lab.range(a,b,step)   Lab.column(rows, i)
+Lab.binomial(rng, n, p)   Lab.linreg(xs, ys) -> {slope, intercept, r2}
+Lab.rk4(f, y0, t0, t1, dt, every) -> {t:[...], y:[[...]]}     // f(t, y) returns the derivatives as an array
+Limits: 5 second run time, 6 charts, 12 series, 5000 points per series, 500 table rows.
+No network, no storage, no DOM: scripts run in an isolated sandbox.</pre></details>
+      <form id="edExpForm" class="ed-form" novalidate>
+        <input type="hidden" id="edExpId">
+        <label class="wide">Experiment title<input id="edExpTitle" maxlength="120" placeholder="e.g. Projectile motion with air drag"></label>
+        <label>Lab<select id="edExpLab"></select></label>
+        <label>Difficulty<select id="edExpDiff"><option value="intro">Intro</option><option value="intermediate">Intermediate</option><option value="advanced">Advanced</option></select></label>
+        <label>Minutes<input id="edExpMin" type="number" min="1" max="240" value="5"></label>
+        <label>Status<select id="edExpStatus"><option value="published">Published (visible after you publish)</option><option value="draft">Draft (hidden)</option></select></label>
+        <label class="wide">One-line summary<input id="edExpSummary" maxlength="200" placeholder="What will visitors discover?"></label>
+        <label class="wide">Hypothesis<textarea id="edExpHyp" rows="2" maxlength="500" placeholder="What do you expect to happen?"></textarea></label>
+        <label class="wide">Theory / background (simple markdown: ## heading, - bullet, **bold**)<textarea id="edExpTheory" class="lb-md" maxlength="8000" rows="6"></textarea></label>
+        <label class="wide">Safety note (optional)<input id="edExpSafety" maxlength="300"></label>
+        <div class="wide ed-section"><h3>Parameters (the sliders visitors get)</h3><div id="edParams"></div><button type="button" class="ed-mini" id="edAddParam">＋ Add parameter</button></div>
+        <div class="wide ed-section"><h3>Goal / discovery badge (optional)</h3>
+          <div class="lb-prm" style="grid-template-columns:1fr .7fr .7fr .7fr 2fr">
+            <input id="edGoalMetric" placeholder="metric key (e.g. range)"><select id="edGoalOp"><option value="">no goal</option><option value=">=">at least</option><option value="<=">at most</option><option value="between">between</option></select><input id="edGoalV" type="number" step="any" placeholder="value"><input id="edGoalV2" type="number" step="any" placeholder="and"><input id="edGoalText" maxlength="160" placeholder="Challenge text shown to visitors"></div></div>
+        <div class="wide ed-section"><h3>Script</h3>
+          <div class="ed-actions" style="margin-bottom:8px"><label class="ed-inline">Insert template <select id="edTemplate"><option value="">choose…</option><option value="blank">Blank experiment</option><option value="ode">Simulation with rk4</option><option value="mc">Monte Carlo</option><option value="curve">Function plot</option></select></label></div>
+          <textarea id="edExpScript" class="lb-code" spellcheck="false" maxlength="20000" aria-label="Experiment script"></textarea></div>
+        <div class="wide ed-section"><h3>Test run (in the sandbox)</h3>
+          <div class="lb-split"><div class="lb-run" id="edSliders"></div><div class="lb-run"><div class="ed-actions"><button type="button" class="ed-primary" id="edTestRun">▶ Run test</button><span class="ed-muted" id="edRunInfo"></span></div><div id="edRunOut" class="lb-run"></div></div></div></div>
+        <div class="ed-actions wide"><button class="ed-primary" type="submit" id="edExpSave">Add experiment</button><button type="button" id="edExpReset">Clear form</button></div>
+        <p class="ed-msg wide" id="edExpMsg" role="status" aria-live="polite"></p>
+      </form>
+      <div class="ed-head" style="display:flex;justify-content:space-between;align-items:end;gap:10px;flex-wrap:wrap"><h2 style="font-size:17px">Your experiments</h2><label class="ed-inline">Show <select id="edFilterLab"></select></label></div>
+      <div class="ed-list" id="edExpList"></div>
+    </section>
+
+    <section id="edPapers" class="ed-view" hidden>
+      <div class="ed-head"><div><h2>Research papers</h2><p>Write up your findings. A paper can link an experiment so readers can reproduce its figure with one click.</p></div></div>
+      <form id="edPaperForm" class="ed-form" novalidate>
+        <input type="hidden" id="edPaperId">
+        <label class="wide">Title<input id="edPaperTitle" maxlength="160"></label>
+        <label>Lab<select id="edPaperLab"></select></label>
+        <label>Authors<input id="edPaperAuthors" maxlength="160" placeholder="Names, comma separated"></label>
+        <label>Status<select id="edPaperStatus"><option value="published">Published (visible after you publish)</option><option value="draft">Draft (hidden)</option></select></label>
+        <label class="wide">Abstract<textarea id="edPaperAbs" rows="3" maxlength="1200"></textarea></label>
+        <label class="wide">Paper text (## Heading, - bullet, **bold**, [text](https://link))<textarea id="edPaperBody" class="lb-md" rows="12" maxlength="40000"></textarea></label>
+        <div class="wide ed-section"><h3>Reproducible figure (optional)</h3>
+          <label>Experiment<select id="edFigExp"></select></label><div class="lb-run" id="edFigParams" style="margin-top:8px"></div>
+          <label style="margin-top:8px">Caption<input id="edFigCaption" maxlength="240" placeholder="Figure 1. …"></label></div>
+        <div class="wide ed-section"><h3>References</h3><div id="edRefs"></div><button type="button" class="ed-mini" id="edAddRef">＋ Add reference</button></div>
+        <div class="ed-actions wide"><button class="ed-primary" type="submit" id="edPaperSave">Add paper</button><button type="button" id="edPaperReset">Clear form</button></div>
+        <p class="ed-msg wide" id="edPaperMsg" role="status" aria-live="polite"></p>
+      </form>
+      <h2 style="font-size:17px">Your papers</h2>
+      <div class="ed-list" id="edPaperList"></div>
+    </section>
+
+    <section id="edPublish" class="ed-view" hidden>
+      <div class="ed-head"><div><h2>Publish to everyone</h2><p>Every script is test-run in the sandbox first. Visitors see your work within about a minute.</p></div></div>
+      <div class="ed-note" id="pubAccount" role="status">Checking your sign-in…</div>
+      <div id="pubProblems"></div>
+      <div class="ed-two">
+        <div class="ed-card">
+          <div class="ed-cardhead"><h3>What will go live</h3><span class="ed-muted" id="pubSize"></span></div>
+          <ul class="ed-diff" id="pubSummary"></ul>
+          <div class="ed-actions" style="margin-bottom:10px"><button type="button" id="pubVerify">Test-run every experiment</button><span class="ed-muted" id="pubVerifyInfo"></span></div>
+          <ul class="ed-diff" id="pubVerifyList"></ul>
+          <label class="ed-field">Note for the history (optional)<input id="pubNote" maxlength="200" placeholder="e.g. Added the epidemic lab"></label>
+          <div class="ed-actions"><button class="ed-primary" type="button" id="pubPublish" disabled>Publish to everyone</button><button type="button" id="pubRefresh">Check live version</button></div>
+          <div class="ed-links"><a href="labs.html?preview=local" target="_blank" rel="noopener">Preview my drafts ↗</a><a href="labs.html" target="_blank" rel="noopener">Open live page ↗</a></div>
+          <p class="ed-msg" id="pubMessage" role="status" aria-live="polite"></p>
+        </div>
+        <div class="ed-card">
+          <div class="ed-cardhead"><h3>Live right now</h3></div>
+          <div id="pubLive" class="ed-muted">Checking…</div>
+          <div class="ed-cardhead" style="margin-top:18px"><h3>Version history</h3></div>
+          <ol class="ed-log" id="pubHistory"><li class="ed-muted">Sign in to see history.</li></ol>
+        </div>
+      </div>
+    </section>
+
+    <section id="edTutorial" class="ed-view" hidden>
+      <div class="ed-head"><div><h2>Scientist Tutorial</h2><p>Build a lab, script an experiment, write it up and publish.</p></div></div>
+      <div class="ed-tutorial">
+        <h3>1. Start with the starter pack</h3><ol><li>On the Dashboard press <strong>Import starter pack</strong>. Open an experiment from the list to see how a script is written, change numbers and press <strong>Run test</strong>.</li></ol>
+        <h3>2. Create a lab</h3><ol><li>Open <strong>Labs</strong> and add a themed room (Physics, Chemistry, Biology …) with an emoji and colour.</li></ol>
+        <h3>3. Script an experiment</h3>
+        <ol><li>In <strong>Experiment studio</strong> pick a lab, add <strong>parameters</strong> (each becomes a slider for visitors) and write the script. It receives <code>params</code> and <code>Lab</code>, and returns charts, metrics and an optional table.</li>
+          <li>Give metrics short keys (e.g. <code>range</code>). A <strong>goal</strong> such as “range at least 120” turns the experiment into a challenge with a badge.</li>
+          <li>Press <strong>Run test</strong> as often as you like. Errors show the message and line. Scripts that run longer than 5 seconds are stopped.</li></ol>
+        <h3>4. Write a paper</h3><ol><li>In <strong>Papers</strong> write an abstract and body, then link an experiment with chosen parameter values: readers can press <strong>Reproduce figure</strong> to run it themselves.</li></ol>
+        <h3>5. Publish</h3><ol><li>Open <strong>Publish</strong>, press <strong>Test-run every experiment</strong>, fix any red items and publish. You can restore any earlier version from the history.</li></ol>
+        <h3>Good to know</h3><ul><li>Published scripts are public. Never put secrets in them.</li><li>Visitors run your script in their own browser, inside a sandbox with no network or storage access.</li></ul>
+      </div>
+    </section>
+    <footer class="ed-footer">Drafts stay in this browser until you publish. Publishing needs a Labs employee account.</footer>
+  </main>
+  <script src="labs-core.js"></script>
+  <script src="labs-starter.js"></script>
+  <script src="labs-employee.js"></script>
+<script src="../index/kit-bar.js" defer></script>
+</body>
+</html>
