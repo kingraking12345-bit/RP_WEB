@@ -6,4 +6,4 @@ window.RP_BACKEND = "postgres";
 
 /* The address of your hosted API, with no trailing slash. Example: "https://rp-api.onrender.com"
    While testing on your own computer use "http://localhost:3000". */
-window.RP_API_URL = "http://localhost:3000";
+window.RP_API_URL = "https://rp-api-3bj1.onrender.com";
