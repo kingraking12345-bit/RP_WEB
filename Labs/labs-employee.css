@@ -103,3 +103,15 @@ button.ed-tile{cursor:pointer}button.ed-tile:hover{border-color:var(--accent)}.e
 .lb-ok{color:var(--green)}.lb-bad{color:var(--red)}
 .ed-form textarea.lb-md{min-height:220px;font:13px/1.5 Consolas,monospace}
 .lb-table{width:100%;border-collapse:collapse;font-size:12px}.lb-table th,.lb-table td{padding:4px 8px;border-bottom:1px solid var(--line);text-align:left}
+
+.ed-count{display:inline-block;min-width:18px;padding:0 6px;margin-left:4px;border-radius:9px;background:var(--red);color:#fff;font-size:11px;line-height:18px;text-align:center}
+.ed-inline{display:inline-flex;align-items:center;gap:6px;color:var(--muted);font-size:12px}
+.ed-assert{display:grid;grid-template-columns:1.1fr 1fr .8fr .7fr .7fr auto;gap:6px;margin-bottom:6px}
+.ed-assert select,.ed-assert input{padding:7px 8px;border:1px solid var(--line);border-radius:6px;background:#030814;color:var(--text);min-width:0}
+@media(max-width:760px){.ed-assert{grid-template-columns:1fr 1fr}}
+.ed-who{font-weight:700;color:var(--accent2)}
+.ed-inbox-form{display:grid;gap:6px;margin-top:8px;grid-template-columns:1fr 1fr;width:100%}
+.ed-inbox-form textarea,.ed-inbox-form input{padding:7px 9px;border:1px solid var(--line);border-radius:6px;background:#030814;color:var(--text);min-width:0;width:100%}
+.ed-inbox-form .wide{grid-column:1/-1}
+.ed-row.unread{border-left:3px solid var(--amber)}
+.ed-row{flex-wrap:wrap}
