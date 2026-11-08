@@ -1,9 +1,10 @@
 -- RP Labs: science labs (Physics, Chemistry, Biology, ...) with scripted experiments and research papers.
--- Run once in the Supabase SQL Editor AFTER account-system.sql. Safe to run again.
+-- Run with "npm run migrate" (server folder) AFTER account-system.sql. Safe to run again.
 --
---   * Lab employees (scientists) build labs, experiment scripts and papers in labs-employee.html (drafts live in their browser) and publish a snapshot.
---   * Published scripts are public. Visitors' browsers run them inside a locked-down sandbox (no network, no storage, 5 s limit).
---   * The server validates shape and size on publish; it never executes scripts.
+--   * Lab employees (scientists) build labs, experiment scripts and papers in labs-employee.html and publish a snapshot.
+--   * Experiment SCRIPTS ARE PRIVATE. The public snapshot never contains them: they are stored in rp_labs_scripts, which only
+--     Labs employees can read (see labs-training.sql). Visitors only receive results the employees have trained.
+--   * The server validates shape and size on publish; it never executes scripts. There is no limit on script length.
 
 insert into public.rp_roles(role_name, description, is_system) values
   ('Labs Employee', 'Builds labs, experiments and research papers for the Labs branch.', true)
@@ -24,6 +25,22 @@ grant select (version, snapshot, published_at, note) on public.rp_labs_publicati
 drop policy if exists rp_labs_publications_read on public.rp_labs_publications;
 create policy rp_labs_publications_read on public.rp_labs_publications for select to anon, authenticated using (true);
 
+-- Private experiment scripts (nobody but Labs employees can read this, and only through rp_labs_scripts_get()).
+create table if not exists public.rp_labs_scripts (
+  exp_id text primary key,
+  script text not null,
+  updated_by uuid references auth.users(id) on delete set null,
+  updated_at timestamptz not null default now()
+);
+alter table public.rp_labs_scripts enable row level security;
+revoke all on public.rp_labs_scripts from anon, authenticated;
+
+-- One-time clean-up: remove scripts from every snapshot that was published before scripts became private.
+update public.rp_labs_publications p set snapshot = jsonb_set(p.snapshot, '{experiments}',
+  (select coalesce(jsonb_agg(e - 'script'), '[]'::jsonb) from jsonb_array_elements(p.snapshot -> 'experiments') e))
+where jsonb_typeof(p.snapshot -> 'experiments') = 'array'
+  and exists (select 1 from jsonb_array_elements(p.snapshot -> 'experiments') e where e ? 'script');
+
 create or replace function public.rp_is_labs_editor()
 returns boolean language sql stable security definer set search_path = public, pg_temp as $$
   select exists(select 1 from public.rp_accounts where id = (select auth.uid()) and status = 'active'
@@ -40,9 +57,9 @@ declare
 begin
   if not public.rp_is_labs_editor() then raise exception 'Labs employee role required'; end if;
   if p_snapshot is null or jsonb_typeof(p_snapshot) <> 'object' then raise exception 'Snapshot must be a JSON object'; end if;
-  if octet_length(p_snapshot::text) > 6000000 then raise exception 'Snapshot is too large (limit 6 MB)'; end if;
+  if octet_length(p_snapshot::text) > 60000000 then raise exception 'Snapshot is too large (limit 60 MB)'; end if;
   if jsonb_typeof(v_labs) <> 'array' or jsonb_typeof(v_exps) <> 'array' or jsonb_typeof(v_papers) <> 'array' then raise exception 'Labs, experiments and papers must be lists'; end if;
-  if jsonb_array_length(v_labs) > 20 or jsonb_array_length(v_exps) > 200 or jsonb_array_length(v_papers) > 200 then raise exception 'Too many labs, experiments or papers'; end if;
+  if jsonb_array_length(v_labs) > 50 or jsonb_array_length(v_exps) > 1000 or jsonb_array_length(v_papers) > 1000 then raise exception 'Too many labs, experiments or papers'; end if;
 
   for v_item in select value from jsonb_array_elements(v_labs) loop
     if jsonb_typeof(v_item) <> 'object' or coalesce(v_item ->> 'id', '') = '' or coalesce(v_item ->> 'name', '') = '' then raise exception 'Every lab needs an id and a name'; end if;
@@ -54,8 +71,8 @@ begin
   for v_item in select value from jsonb_array_elements(v_exps) loop
     if jsonb_typeof(v_item) <> 'object' or coalesce(v_item ->> 'id', '') = '' or coalesce(v_item ->> 'title', '') = '' then raise exception 'Every experiment needs an id and a title'; end if;
     if not ((v_item ->> 'lab') = any (v_lab_ids)) then raise exception 'Experiment "%" belongs to a lab that does not exist', v_item ->> 'title'; end if;
-    if jsonb_typeof(coalesce(v_item -> 'params', '[]'::jsonb)) <> 'array' or jsonb_array_length(coalesce(v_item -> 'params', '[]'::jsonb)) > 12 then raise exception 'Experiment "%" can have at most 12 parameters', v_item ->> 'title'; end if;
-    if jsonb_typeof(v_item -> 'script') <> 'string' or length(v_item ->> 'script') > 20000 then raise exception 'Experiment "%" needs a script of at most 20000 characters', v_item ->> 'title'; end if;
+    if jsonb_typeof(coalesce(v_item -> 'params', '[]'::jsonb)) <> 'array' or jsonb_array_length(coalesce(v_item -> 'params', '[]'::jsonb)) > 30 then raise exception 'Experiment "%" can have at most 30 parameters', v_item ->> 'title'; end if;
+    if jsonb_typeof(v_item -> 'script') <> 'string' or btrim(v_item ->> 'script') = '' then raise exception 'Experiment "%" needs a script', v_item ->> 'title'; end if;
   end loop;
   select coalesce(array_agg(e ->> 'id'), '{}') into v_exp_ids from jsonb_array_elements(v_exps) e;
   if (select count(distinct x) from unnest(v_exp_ids) x) <> cardinality(v_exp_ids) then raise exception 'Experiment ids must be unique'; end if;
@@ -68,9 +85,16 @@ begin
        and not ((v_item -> 'figure' ->> 'experiment') = any (v_exp_ids)) then raise exception 'Paper "%" reproduces an experiment that does not exist', v_item ->> 'title'; end if;
   end loop;
 
+  -- Scripts go to the private table; the public snapshot gets the experiments WITHOUT their script.
+  insert into public.rp_labs_scripts(exp_id, script, updated_by, updated_at)
+    select e ->> 'id', e ->> 'script', auth.uid(), now() from jsonb_array_elements(v_exps) e
+  on conflict (exp_id) do update set script = excluded.script, updated_by = excluded.updated_by, updated_at = now();
+  delete from public.rp_labs_scripts where exp_id <> all (v_exp_ids);
+
   insert into public.rp_labs_publications(snapshot, note, published_by)
-  values (jsonb_build_object('schema', 1, 'labs', v_labs, 'experiments', v_exps, 'papers',
-    (select coalesce(jsonb_agg(p), '[]'::jsonb) from jsonb_array_elements(v_papers) p where coalesce(p ->> 'status', 'published') <> 'draft')),
+  values (jsonb_build_object('schema', 2, 'labs', v_labs,
+    'experiments', (select coalesce(jsonb_agg(e - 'script' - 'tests'), '[]'::jsonb) from jsonb_array_elements(v_exps) e),
+    'papers', (select coalesce(jsonb_agg(p), '[]'::jsonb) from jsonb_array_elements(v_papers) p where coalesce(p ->> 'status', 'published') <> 'draft')),
     left(coalesce(p_note, ''), 200), auth.uid())
   returning version into v_version;
   insert into public.rp_audit_log(actor, action, details) values (auth.uid(), 'labs_content_published', jsonb_build_object('version', v_version, 'note', left(coalesce(p_note, ''), 200)));
