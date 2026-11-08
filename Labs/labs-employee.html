@@ -17,6 +17,9 @@
       <button type="button" data-view="labs" aria-selected="false">Labs</button>
       <button type="button" data-view="experiments" aria-selected="false">Experiment studio</button>
       <button type="button" data-view="papers" aria-selected="false">Papers</button>
+      <button type="button" data-view="inbox" aria-selected="false">Inbox <span class="ed-count" id="edInboxCount" hidden></span></button>
+      <button type="button" data-view="training" aria-selected="false">Training</button>
+      <button type="button" data-view="settings" aria-selected="false">Settings</button>
       <button type="button" data-view="publish" class="ed-publish-tab" aria-selected="false">Publish</button>
       <button type="button" data-view="tutorial" aria-selected="false">Tutorial</button>
     </nav>
@@ -82,9 +85,14 @@ No network, no storage, no DOM: scripts run in an isolated sandbox.</pre></detai
             <input id="edGoalMetric" placeholder="metric key (e.g. range)"><select id="edGoalOp"><option value="">no goal</option><option value=">=">at least</option><option value="<=">at most</option><option value="between">between</option></select><input id="edGoalV" type="number" step="any" placeholder="value"><input id="edGoalV2" type="number" step="any" placeholder="and"><input id="edGoalText" maxlength="160" placeholder="Challenge text shown to visitors"></div></div>
         <div class="wide ed-section"><h3>Script</h3>
           <div class="ed-actions" style="margin-bottom:8px"><label class="ed-inline">Insert template <select id="edTemplate"><option value="">choose…</option><option value="blank">Blank experiment</option><option value="ode">Simulation with rk4</option><option value="mc">Monte Carlo</option><option value="curve">Function plot</option></select></label></div>
-          <textarea id="edExpScript" class="lb-code" spellcheck="false" maxlength="20000" aria-label="Experiment script"></textarea></div>
+          <textarea id="edExpScript" class="lb-code" spellcheck="false" aria-label="Experiment script"></textarea></div>
         <div class="wide ed-section"><h3>Test run (in the sandbox)</h3>
           <div class="lb-split"><div class="lb-run" id="edSliders"></div><div class="lb-run"><div class="ed-actions"><button type="button" class="ed-primary" id="edTestRun">▶ Run test</button><span class="ed-muted" id="edRunInfo"></span></div><div id="edRunOut" class="lb-run"></div></div></div></div>
+        <div class="wide ed-section"><h3>Tests</h3>
+          <p class="ed-muted">Automatic checks run your script at the start values, the lowest and highest slider values, random settings and twice for repeatability. Add your own checks below; they are saved with the experiment and run before every publish.</p>
+          <div class="ed-actions" style="margin-bottom:8px"><button type="button" class="ed-primary" id="edTestAll">▶ Run all tests</button><button type="button" id="edTestQuick">Quick check</button><button type="button" id="edTrainNow" title="Save the result at the current slider values as a trained result visitors can get">Train current sliders</button><span class="ed-muted" id="edTestInfo"></span></div>
+          <div id="edAsserts"></div><button type="button" class="ed-mini" id="edAddAssert">＋ Add a check</button>
+          <ul class="ed-diff" id="edTestList" style="margin-top:10px"></ul></div>
         <div class="ed-actions wide"><button class="ed-primary" type="submit" id="edExpSave">Add experiment</button><button type="button" id="edExpReset">Clear form</button></div>
         <p class="ed-msg wide" id="edExpMsg" role="status" aria-live="polite"></p>
       </form>
@@ -137,6 +145,50 @@ No network, no storage, no DOM: scripts run in an isolated sandbox.</pre></detai
       </div>
     </section>
 
+    <section id="edInbox" class="ed-view" hidden>
+      <div class="ed-head"><div><h2>Inbox: combinations nobody has trained</h2><p>Every time someone tries a combination you have not trained, it lands here with their account name and number. Train it and they get a notification.</p></div></div>
+      <div class="ed-actions" style="margin-bottom:12px"><label class="ed-inline">Show <select id="edInboxFilter"><option value="open">needs attention</option><option value="new">new only</option><option value="dismissed">dismissed</option><option value="all">everything</option></select></label><button type="button" id="edInboxSeen">Mark all as seen</button><button type="button" id="edInboxRefresh">Refresh</button><span class="ed-muted" id="edInboxInfo"></span></div>
+      <div class="ed-list" id="edInboxList"></div>
+    </section>
+
+    <section id="edTraining" class="ed-view" hidden>
+      <div class="ed-head"><div><h2>Training library</h2><p>Everything the labs have been taught. Visitors cannot list or read this; they only get the answer for the exact combination they try.</p></div></div>
+      <div class="ed-tiles" id="edTrainTiles"></div>
+      <div class="ed-actions" style="margin-bottom:12px"><label class="ed-inline">Type <select id="edTrainKind"><option value="">all</option><option value="lab">Lab bench</option><option value="time">Time &amp; Temp</option><option value="physics">Physics Lab</option><option value="exp">Science Labs</option></select></label><input id="edTrainSearch" placeholder="Search key or title" style="padding:7px 9px;border:1px solid var(--line);border-radius:6px;background:#030814;color:var(--text)"><button type="button" id="edTrainExport">Download all (JSON)</button><label class="ed-file">Import JSON<input type="file" id="edTrainImport" accept="application/json"></label><span class="ed-muted" id="edTrainInfo"></span></div>
+      <div class="ed-list" id="edTrainList"></div>
+      <div class="ed-card" style="margin-top:16px"><h3>Train a grid of experiment results</h3>
+        <p class="ed-muted">Pick a published experiment draft and how many values to try for each slider. Every combination is run in the sandbox and saved, so visitors get an answer for all of them (up to 200).</p>
+        <div class="ed-actions"><select id="edGridExp"></select><label class="ed-inline">Values per slider <input id="edGridN" type="number" min="1" max="12" value="3" style="width:64px"></label><button type="button" class="ed-primary" id="edGridRun">Run and train grid</button><span class="ed-muted" id="edGridInfo"></span></div></div>
+    </section>
+
+    <section id="edSettings" class="ed-view" hidden>
+      <div class="ed-head"><div><h2>Labs settings</h2><p>These apply to every visitor straight away. You always see every tab, even ones you switch off.</p></div></div>
+      <form id="edSettingsForm" class="ed-form" novalidate>
+        <div class="wide ed-section" style="margin-top:0;border:0;padding-top:0"><h3>Access</h3></div>
+        <label>Labs are open to visitors<select id="stOpen"><option value="true">Open</option><option value="false">Closed (employees only)</option></select></label>
+        <label>Daily experiment on Science Labs<select id="stDaily"><option value="true">Show</option><option value="false">Hide</option></select></label>
+        <label class="wide">Banner message (shown at the top of the Labs page, leave empty for none)<input id="stBanner" maxlength="400"></label>
+        <label>Banner colour<select id="stTone"><option value="info">Cyan (info)</option><option value="good">Green</option><option value="warn">Amber</option><option value="bad">Red</option></select></label>
+        <div class="wide ed-section"><h3>Undiscovered combinations</h3></div>
+        <label class="wide">Text visitors see when nothing is trained<input id="stNotText" maxlength="400"></label>
+        <label class="wide">Text for visitors who are not signed in<input id="stGuestText" maxlength="400"></label>
+        <label>Notify Labs employees<select id="stNotify"><option value="true">Yes</option><option value="false">No (inbox only)</option></select></label>
+        <label>Thank visitors when you train their combination<select id="stThank"><option value="true">Yes</option><option value="false">No</option></select></label>
+        <label>Max notifications per day<input id="stNotCap" type="number" min="0" max="100000"></label>
+        <label>Max new combinations per account per day<input id="stAttCap" type="number" min="0" max="100000"></label>
+        <div class="wide ed-section"><h3>Economy and bench</h3></div>
+        <label>Starting money for new visitors ($)<input id="stMoney" type="number" min="0" max="1000000"></label>
+        <label>Store price multiplier (0.1 to 10)<input id="stMult" type="number" min="0.1" max="10" step="0.05"></label>
+        <label>Items allowed per experiment (2 to 8)<input id="stMax" type="number" min="2" max="8"></label>
+        <label>Quiz reward, both correct ($)<input id="stQ2" type="number" min="0"></label>
+        <label>Quiz reward, one correct ($)<input id="stQ1" type="number" min="0"></label>
+        <label>Script time limit (seconds, 1 to 120)<input id="stTimeout" type="number" min="1" max="120"></label>
+        <div class="wide ed-section"><h3>Tabs visitors can see</h3><div class="ed-checks" id="stTabs"></div></div>
+        <div class="ed-actions wide"><button class="ed-primary" type="submit" id="stSave">Save settings</button><button type="button" id="stReload">Discard changes</button></div>
+        <p class="ed-msg wide" id="stMsg" role="status" aria-live="polite"></p>
+      </form>
+    </section>
+
     <section id="edTutorial" class="ed-view" hidden>
       <div class="ed-head"><div><h2>Scientist Tutorial</h2><p>Build a lab, script an experiment, write it up and publish.</p></div></div>
       <div class="ed-tutorial">
@@ -154,8 +206,11 @@ No network, no storage, no DOM: scripts run in an isolated sandbox.</pre></detai
     <footer class="ed-footer">Drafts stay in this browser until you publish. Publishing needs a Labs employee account.</footer>
   </main>
   <script src="labs-core.js"></script>
+  <script src="labs-server.js"></script>
+  <script src="labs-coder.js"></script>
   <script src="labs-starter.js"></script>
   <script src="labs-employee.js"></script>
+  <script src="labs-employee-extra.js"></script>
 <script src="../index/kit-bar.js" defer></script>
 </body>
 </html>
