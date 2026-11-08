@@ -147,5 +147,25 @@ const Lab = (() => {
     if (!goal || !goal.metric) return false; const m = result.metrics.find(x => x.key === goal.metric); if (!m || typeof m.value !== "number") return false; const v = m.value, a = Number(goal.value), b = Number(goal.value2);
     return goal.op === ">=" ? v >= a : goal.op === "<=" ? v <= a : goal.op === "between" ? v >= Math.min(a, b) && v <= Math.max(a, b) : false;
   }
-  return { run, drawChart, markdown, csv, download, formatValue, goalMet, COLORS, LIMITS, fmt, helpersSource: HELPERS };
+  /* Same experiment + same (rounded) settings = same key. Used for trained results on the server. */
+  function expKey(exp, params) {
+    const o = {};
+    (exp.params || []).forEach(p => {
+      const min = Number.isFinite(Number(p.min)) ? Number(p.min) : 0, max = Number.isFinite(Number(p.max)) ? Number(p.max) : 100, st = Number(p.step) > 0 ? Number(p.step) : 1;
+      let v = Number(params && params[p.key]); if (!Number.isFinite(v)) v = Number(p.default) || 0;
+      v = Math.min(max, Math.max(min, v)); v = Math.round((v - min) / st) * st + min; o[p.key] = +v.toPrecision(10);
+    });
+    return String(exp.id) + "|" + Object.keys(o).sort().map(k => k + "=" + o[k]).join("&");
+  }
+  /* Syntax check without running the script (the sandbox still runs it). Returns { ok } or { ok:false, error }. */
+  function lint(script) {
+    const src = String(script == null ? "" : script);
+    if (!src.trim()) return { ok: false, error: "The script is empty." };
+    try { new Function("params", "Lab", src); } catch (e) { return { ok: false, error: String(e && e.message || e) }; }
+    const warn = [];
+    if (!/\breturn\b/.test(src)) warn.push("The script never uses return. It must return { charts, metrics, table }.");
+    if (/\b(fetch|XMLHttpRequest|WebSocket|importScripts|localStorage|document|window)\b/.test(src)) warn.push("The sandbox has no network, storage or page access. fetch, document, window and similar names will fail.");
+    return { ok: true, warnings: warn };
+  }
+  return { expKey, lint, run, drawChart, markdown, csv, download, formatValue, goalMet, COLORS, LIMITS, fmt, helpersSource: HELPERS };
 })();
