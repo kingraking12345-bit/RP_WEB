@@ -1,5 +1,5 @@
 /* RP Labs: "Science Labs" tab. Published labs, experiments and papers made by Labs employees.
-   Experiment scripts run in the sandbox from labs-core.js. Progress and the lab notebook stay on this device. */
+   Visitors never receive experiment scripts: results are trained on the server and looked up. Progress and the lab notebook stay on this device. */
 (() => {
   "use strict";
   const L = window.RPLabs; if (!L) return;
@@ -7,6 +7,7 @@
   const CACHE_KEY = "rpLabsPublicCache.v1", SESSION_KEY = "sb-nesxcgymsgegkqjhfydx-auth-token", NB_KEY = "rpLabsNotebook.v1", POLL_MS = 60000;
   const EDITOR_ROLES = ["Creator", "Lab Studio Director", "Lab Scientist", "Labs Employee"];
   const PREVIEW = new URLSearchParams(location.search).get("preview") === "local";
+  let settings = (window.RPLabsServer || {}).DEFAULTS || {};
   const state = { snapshot: null, version: 0, offline: false, loaded: false, view: "hub", lab: "", exp: "", paper: "", labTab: "exp" };
   const arr = v => Array.isArray(v) ? v : [];
   const read = (k, f) => { try { const v = JSON.parse(localStorage.getItem(k) || "null"); return v == null ? f : v; } catch { return f; } };
@@ -94,7 +95,7 @@
     state.view = "hub"; top(); host.append(el("h2", { text: "🧪 Science Labs" }), el("p", { class: "research-meta", text: "Run real simulations written by RP scientists. Change the settings, watch what happens, and write down what you discover." }));
     const n = nb(), found = Object.keys(n.done).filter(id => expById(id)).length;
     host.append(el("div", { class: "sl-bar" }, el("span", { class: "sl-tag ok", text: "🏅 " + found + " of " + exps().length + " experiments completed" }), el("span", { class: "grow" }), btn("📓 My lab notebook (" + n.runs.length + ")", () => go("notebook"), "btn secondary")));
-    const d = dailyExperiment();
+    const d = settings.show_daily_experiment === false ? null : dailyExperiment();
     if (d) host.append(el("div", { class: "sl-panel sl-daily" }, el("h3", { text: "⭐ Experiment of the day" }), el("strong", { text: d.title }), el("p", { class: "research-meta", text: (labById(d.lab) || {}).name + " · " + (d.summary || "") }), btn("Try it today", () => go("exp", { exp: d.id, lab: d.lab }), "btn")));
     if (!labs().length) { host.append(el("p", { class: "sl-empty", text: state.loaded || PREVIEW ? "No labs are published yet. Check back soon." : "Loading labs…" })); return; }
     const grid = el("div", { class: "sl-grid" });
@@ -162,10 +163,22 @@
     if (res.notes) root.append(el("p", { class: "research-meta", text: res.notes }));
     canvases.forEach((cv, i) => cv.setAttribute("aria-label", charts[i].title || "Chart")); animate(canvases, charts, (opts && opts.overlays) || []);
   }
+  /* Visitors never receive experiment scripts. They can only ask the server whether this exact setting has been trained.
+     Labs employees previewing their local drafts (?preview=local) run the draft script directly. */
+  async function runOrLookup(x, params) {
+    if (PREVIEW && x.script) return L.run(x.script, params, { timeoutMs: Number(settings.sandbox_timeout_ms) || undefined });
+    const S = window.RPLabsServer, key = L.expKey(x, params), label = x.title + " (" + arr(x.params).map(p => p.label + " = " + (key.split("|")[1].split("&").find(q => q.startsWith(p.key + "=")) || "").split("=")[1]).join(", ") + ")";
+    const r = await S.lookup("exp", key, label, params);
+    if (r.found && r.data) return { ok: true, result: r.data };
+    if (r.error) return { ok: false, error: "Could not reach the lab server. " + r.error };
+    const st = settings;
+    return { undiscovered: true, message: r.closed ? "The labs are closed right now." : r.guest ? "Not discovered yet. " + st.guest_text : r.limited ? "Not discovered yet. You have tried a lot of new combinations today." : st.not_discovered_text };
+  }
   async function run(x, runBtn, results) {
     if (running) return; running++; runBtn.disabled = true; runBtn.textContent = "Running…"; const params = { ...curParams }, t0 = performance.now();
-    const res = await L.run(x.script, params); running--; runBtn.disabled = false; runBtn.textContent = "▶ Run experiment";
+    const res = await runOrLookup(x, params); running--; runBtn.disabled = false; runBtn.textContent = "▶ Run experiment";
     if (state.view !== "exp" || state.exp !== x.id) return;
+    if (res.undiscovered) { results.replaceChildren(el("div", { class: "sl-panel" }, el("h3", { text: "❔ Not discovered yet" }), el("p", { text: res.message }), el("p", { class: "research-meta", text: "Try different settings. The Labs team may add this result later." }))); return; }
     if (!res.ok) { results.replaceChildren(el("div", { class: "sl-err", text: "The experiment could not run.\n" + res.error }), el("p", { class: "research-meta", text: "Try different settings." })); return; }
     const result = res.result; prevRun = lastRun; lastRun = { params, result };
     const overlays = prevRun ? prevRun.result.charts.map(c => c.series) : [];
@@ -187,7 +200,7 @@
     const x = p.figure && expById(p.figure.experiment);
     if (x) {
       const fig = el("div", { class: "sl-panel" }), out = el("div", { class: "sl-results" }); fig.append(el("strong", { text: "Reproducible figure" }), out, el("p", { class: "research-meta", text: p.figure.caption || "" }));
-      const go1 = btn("▶ Reproduce figure", async function () { this.disabled = true; this.textContent = "Running…"; const res = await L.run(x.script, { ...Object.fromEntries(arr(x.params).map(q => [q.key, q.default])), ...(p.figure.params || {}) }); this.disabled = false; this.textContent = "▶ Run again"; if (state.view !== "paper") return; if (!res.ok) out.replaceChildren(el("div", { class: "sl-err", text: res.error })); else showResult(out, res.result); }, "btn");
+      const go1 = btn("▶ Reproduce figure", async function () { this.disabled = true; this.textContent = "Running…"; const res = await runOrLookup(x, { ...Object.fromEntries(arr(x.params).map(q => [q.key, q.default])), ...(p.figure.params || {}) }); this.disabled = false; this.textContent = "▶ Run again"; if (state.view !== "paper") return; if (res.undiscovered) out.replaceChildren(el("p", { class: "research-meta", text: res.message })); else if (!res.ok) out.replaceChildren(el("div", { class: "sl-err", text: res.error })); else showResult(out, res.result); }, "btn");
       fig.append(el("div", { class: "sl-bar" }, go1, btn("Open experiment with these settings", () => { state.preset = { ...(p.figure.params || {}) }; go("exp", { exp: x.id, lab: x.lab }); }, "btn secondary"))); art.append(fig);
     }
     const refs = arr(p.references).filter(r => r && r.title); if (refs.length) { art.append(el("h3", { text: "References" })); const ul = el("ul", {}); refs.forEach(r => { const li = el("li", {}); const u = httpsUrl(r.url); if (u) li.append(el("a", { href: u, target: "_blank", rel: "noopener noreferrer", text: r.title })); else li.textContent = r.title; ul.append(li); }); art.append(ul); }
@@ -218,7 +231,7 @@
   }
   window.addEventListener("hashchange", () => { if (/^#sci\//.test(location.hash)) openFromHash(); });
   if (!PREVIEW) { loadCache(); state.loaded = !!state.snapshot; }
-  hubView(); employeeLink(); syncLive(true).then(() => { if (/^#sci\//.test(location.hash)) openFromHash(); });
+  hubView(); employeeLink(); window.RPLabsServer.settings().then(s => { settings = s; if (state.view === "hub") hubView(); }); syncLive(true).then(() => { if (/^#sci\//.test(location.hash)) openFromHash(); });
   if (PREVIEW) { const b = document.querySelector('.tab-btn[data-tab="scilabs"]'); window.addEventListener("load", () => { if (b) b.click(); }); }
   if (!PREVIEW) { setInterval(() => { if (!document.hidden) syncLive(false); }, POLL_MS); window.addEventListener("online", () => syncLive(false)); if (/^#sci\//.test(location.hash)) window.addEventListener("load", openFromHash); }
   document.addEventListener("visibilitychange", () => { if (!document.hidden && !PREVIEW) syncLive(false); });
