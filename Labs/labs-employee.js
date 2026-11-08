@@ -17,14 +17,19 @@
   const stable = v => Array.isArray(v) ? "[" + v.map(stable).join(",") + "]" : v && typeof v === "object" ? "{" + Object.keys(v).sort().map(k => JSON.stringify(k) + ":" + stable(v[k])).join(",") + "}" : JSON.stringify(v === undefined ? null : v);
   const httpsUrl = v => { try { const u = new URL(String(v).trim()); return u.protocol === "https:" ? u.href : ""; } catch { return ""; } };
   const labName = id => (list("labs").find(l => l.id === id) || {}).name || "(missing lab)";
+  let labSettings = (window.RPLabsServer || {}).DEFAULTS || {};
+  const timeoutMs = () => Math.max(1000, Number(labSettings.sandbox_timeout_ms) || 5000);
   const KEY_RE = /^[A-Za-z_][A-Za-z0-9_]{0,30}$/;
 
   /* ---------- navigation ---------- */
-  const VIEWS = { dashboard: "edDashboard", labs: "edLabs", experiments: "edExperiments", papers: "edPapers", publish: "edPublish", tutorial: "edTutorial" };
+  const VIEWS = { dashboard: "edDashboard", labs: "edLabs", experiments: "edExperiments", papers: "edPapers", inbox: "edInbox", training: "edTraining", settings: "edSettings", publish: "edPublish", tutorial: "edTutorial" };
+  const onShow = {};
   function showView(name) {
     document.querySelectorAll("[data-view]").forEach(b => { const on = b.dataset.view === name; b.classList.toggle("active", on); b.setAttribute("aria-selected", String(on)); });
     Object.entries(VIEWS).forEach(([v, id]) => { const s = $(id), on = v === name; s.hidden = !on; s.classList.toggle("active", on); });
     if (name === "publish") renderPublish();
+    if (onShow[name]) onShow[name]();
+    if (location.hash !== "#" + name && VIEWS[name]) { try { history.replaceState(null, "", "#" + name); } catch { /* ignore */ } }
   }
   document.querySelectorAll("[data-view]").forEach(b => b.addEventListener("click", () => showView(b.dataset.view)));
 
@@ -83,7 +88,8 @@
     curve: `// Plot a function with a slider parameter named "a".\nconst a = params.a === undefined ? 1 : params.a, xs = Lab.linspace(-10, 10, 200);\nreturn { charts: [{ title: "y = a·sin(x)", xLabel: "x", yLabel: "y", series: [{ name: "a = " + a, x: xs, y: xs.map(x => a * Math.sin(x)) }] }] };`
   };
   $("edTemplate").addEventListener("change", e => { const t = TEMPLATES[e.target.value]; if (t && (!$("edExpScript").value.trim() || confirm("Replace the current script with this template?"))) $("edExpScript").value = t; e.target.value = ""; });
-  $("edExpScript").addEventListener("keydown", e => { if (e.key === "Tab" && !e.shiftKey) { e.preventDefault(); const t = e.target, s = t.selectionStart; t.setRangeText("  ", s, t.selectionEnd, "end"); } });
+  // The script editor: line numbers, colours, live error check, autocomplete, snippets, find & replace, settings.
+  const coder = window.RPLabsCoder ? window.RPLabsCoder.attach($("edExpScript"), { getParamKeys: () => cleanParams(collectParams()).map(p => p.key), onRun: () => testRun() }) : null;
 
   /* ---------- result rendering (shared by test run and verification) ---------- */
   function renderResult(root, res, withCanvas) {
@@ -98,7 +104,7 @@
   let running = false;
   async function testRun() {
     if (running) return; running = true; $("edTestRun").disabled = true; $("edRunInfo").textContent = "Running…"; const t0 = performance.now();
-    const res = await window.RPLabs.run($("edExpScript").value, { ...sliderVals }); running = false; $("edTestRun").disabled = false;
+    const res = await window.RPLabs.run($("edExpScript").value, { ...sliderVals }, { timeoutMs: timeoutMs() }); running = false; $("edTestRun").disabled = false;
     $("edRunInfo").textContent = res.ok ? "Finished in " + Math.round(performance.now() - t0) + " ms" : "Failed"; renderResult($("edRunOut"), res);
   }
   $("edTestRun").addEventListener("click", testRun);
@@ -106,7 +112,7 @@
   /* ---------- experiments ---------- */
   function resetExp() {
     $("edExpForm").reset(); $("edExpId").value = ""; $("edParams").replaceChildren(); $("edExpScript").value = ""; $("edRunOut").replaceChildren(); $("edRunInfo").textContent = ""; Object.keys(sliderVals).forEach(k => delete sliderVals[k]);
-    $("edExpSave").textContent = "Add experiment"; say("edExpMsg", ""); rebuildSliders();
+    $("edExpSave").textContent = "Add experiment"; say("edExpMsg", ""); rebuildSliders(); setTests([]); if ($("edTestList")) $("edTestList").replaceChildren(); if ($("edTestInfo")) $("edTestInfo").textContent = "";
   }
   function readGoal() { const op = $("edGoalOp").value, metric = $("edGoalMetric").value.trim(); return op && metric ? { metric, op, value: num($("edGoalV").value, 0), value2: num($("edGoalV2").value, 0), text: $("edGoalText").value.trim() } : null; }
   $("edExpForm").addEventListener("submit", e => {
@@ -116,7 +122,7 @@
     if (bad) return say("edExpMsg", "Parameter key “" + bad + "” must be letters, digits or underscore and start with a letter.", true); if (new Set(keys).size !== keys.length) return say("edExpMsg", "Parameter keys must be unique.", true);
     if (keys.length > 12) return say("edExpMsg", "At most 12 parameters.", true);
     const params = cleanParams(raw); const badRange = params.find(p => !(p.min < p.max) || p.default < p.min || p.default > p.max); if (badRange) return say("edExpMsg", "Parameter “" + badRange.key + "” needs min < max and a start value inside that range.", true);
-    const id = $("edExpId").value || newId("exp"), item = { id, lab: $("edExpLab").value, title, difficulty: $("edExpDiff").value, minutes: Math.min(240, Math.max(1, Math.round(num($("edExpMin").value, 5)))), status: $("edExpStatus").value, summary: $("edExpSummary").value.trim(), hypothesis: $("edExpHyp").value.trim(), theory: $("edExpTheory").value, safety: $("edExpSafety").value.trim(), goal: readGoal(), params, script: $("edExpScript").value };
+    const id = $("edExpId").value || newId("exp"), item = { id, lab: $("edExpLab").value, title, difficulty: $("edExpDiff").value, minutes: Math.min(240, Math.max(1, Math.round(num($("edExpMin").value, 5)))), status: $("edExpStatus").value, summary: $("edExpSummary").value.trim(), hypothesis: $("edExpHyp").value.trim(), theory: $("edExpTheory").value, safety: $("edExpSafety").value.trim(), goal: readGoal(), params, tests: collectTests(), script: $("edExpScript").value };
     const all = list("exps"), i = all.findIndex(x => x.id === id); if (i >= 0) all[i] = item; else all.push(item);
     if (save("exps", all)) { resetExp(); say("edExpMsg", "Experiment saved. Open the Publish tab to send it live."); }
   });
@@ -124,7 +130,7 @@
   function loadExp(x) {
     resetExp(); $("edExpId").value = x.id; $("edExpTitle").value = x.title; $("edExpLab").value = x.lab; $("edExpDiff").value = x.difficulty || "intro"; $("edExpMin").value = x.minutes || 5; $("edExpStatus").value = x.status || "published";
     $("edExpSummary").value = x.summary || ""; $("edExpHyp").value = x.hypothesis || ""; $("edExpTheory").value = x.theory || ""; $("edExpSafety").value = x.safety || ""; $("edExpScript").value = x.script || "";
-    (x.params || []).forEach(p => addParamRow(p)); const g = x.goal || {}; $("edGoalOp").value = g.op || ""; $("edGoalMetric").value = g.metric || ""; $("edGoalV").value = g.value ?? ""; $("edGoalV2").value = g.value2 ?? ""; $("edGoalText").value = g.text || "";
+    (x.params || []).forEach(p => addParamRow(p)); setTests(x.tests); const g = x.goal || {}; $("edGoalOp").value = g.op || ""; $("edGoalMetric").value = g.metric || ""; $("edGoalV").value = g.value ?? ""; $("edGoalV2").value = g.value2 ?? ""; $("edGoalText").value = g.text || "";
     rebuildSliders(); $("edExpSave").textContent = "Save changes"; $("edExpTitle").scrollIntoView({ block: "center" }); $("edExpTitle").focus();
   }
   function renderExpList() {
@@ -184,7 +190,7 @@
   function problems() {
     const out = [], warn = [], labs = list("labs"), lset = new Set(labs.map(l => l.id)), exps = list("exps").filter(x => x.status !== "draft"), eset = new Set(exps.map(x => x.id));
     exps.forEach(x => { const t = "“" + x.title + "”";
-      if (!lset.has(x.lab)) out.push(t + " belongs to a lab that no longer exists."); if (!str(x.script, 30000).trim()) out.push(t + " has no script."); if (str(x.script, 30000).length > 20000) out.push(t + " script is longer than 20000 characters.");
+      if (!lset.has(x.lab)) out.push(t + " belongs to a lab that no longer exists."); if (!String(x.script || "").trim()) out.push(t + " has no script."); else { const lr = window.RPLabs.lint(x.script); if (!lr.ok) out.push(t + " has a syntax error: " + lr.error); }
       if ((x.params || []).length > 12) out.push(t + " has more than 12 parameters.");
       const v = verify[x.id]; if (v && v.script === x.script && !v.ok) out.push(t + " failed its test run: " + v.error.split("\n")[0]);
       if (x.goal && v && v.script === x.script && v.ok && !v.keys.includes(x.goal.metric)) warn.push(t + ": the goal uses metric “" + x.goal.metric + "” which the script does not return.");
@@ -195,11 +201,11 @@
   }
   function buildSnapshot() {
     const lset = new Set(list("labs").map(l => l.id)), pub = list("exps").filter(x => x.status !== "draft" && lset.has(x.lab) && x.title), eset = new Set(pub.map(x => x.id));
-    return { schema: 1,
+    return { schema: 2,
       labs: list("labs").map(l => ({ id: str(l.id, 80), name: str(l.name, 80), emoji: str(l.emoji, 8) || "🔬", color: /^#[0-9a-f]{6}$/i.test(l.color) ? l.color : "#2ee6e6", description: str(l.description, 300) })),
       experiments: pub.map(x => ({ id: str(x.id, 80), lab: str(x.lab, 80), title: str(x.title, 120), difficulty: ["intro", "intermediate", "advanced"].includes(x.difficulty) ? x.difficulty : "intro", minutes: Math.round(num(x.minutes, 5)), summary: str(x.summary, 200), hypothesis: str(x.hypothesis, 500), theory: str(x.theory, 8000), safety: str(x.safety, 300),
         goal: x.goal && x.goal.metric && x.goal.op ? { metric: str(x.goal.metric, 40), op: x.goal.op, value: num(x.goal.value, 0), value2: num(x.goal.value2, 0), text: str(x.goal.text, 160) } : null,
-        params: cleanParams(x.params || []), script: str(x.script, 20000) })),
+        params: cleanParams(x.params || []), tests: cleanTests(x.tests), script: String(x.script || "") })),
       papers: list("papers").filter(p => p.status !== "draft" && lset.has(p.lab) && p.title).map(p => ({ id: str(p.id, 80), lab: str(p.lab, 80), title: str(p.title, 160), authors: str(p.authors, 160), status: "published", abstract: str(p.abstract, 1200), body: str(p.body, 40000),
         figure: p.figure && eset.has(p.figure.experiment) ? { experiment: p.figure.experiment, params: p.figure.params || {}, caption: str(p.figure.caption, 240) } : null,
         references: (p.references || []).map(r => ({ title: str(r.title, 200), url: httpsUrl(r.url) })) })) };
@@ -210,7 +216,10 @@
   async function verifyAll() {
     if (verifying) return false; verifying = true; $("pubVerify").disabled = true; const exps = list("exps").filter(x => x.status !== "draft"); let bad = 0;
     for (let i = 0; i < exps.length; i++) { const x = exps[i]; $("pubVerifyInfo").textContent = "Testing " + (i + 1) + " of " + exps.length + "…"; const params = {}; (x.params || []).forEach(p => { params[p.key] = num(p.default, 0); });
-      const res = await window.RPLabs.run(x.script, params); verify[x.id] = { ok: res.ok, error: res.ok ? "" : res.error, script: x.script, keys: res.ok ? res.result.metrics.map(m => m.key) : [] }; if (!res.ok) bad++; }
+      const T = window.RPLabsTests; let res, failMsg = "";
+      if (T) { const out = await T.suite(x, { mode: "quick", timeoutMs: timeoutMs() }); res = out.defaultRun || { ok: false, error: "No result" }; if (out.failed) failMsg = out.firstFailure; }
+      else res = await window.RPLabs.run(x.script, params, { timeoutMs: timeoutMs() });
+      const ok = res.ok && !failMsg; verify[x.id] = { ok, error: ok ? "" : (failMsg || res.error), script: x.script, tests: JSON.stringify(x.tests || []), keys: res.ok ? res.result.metrics.map(m => m.key) : [], result: res.ok ? res.result : null }; if (!ok) bad++; }
     verifying = false; $("pubVerify").disabled = false; $("pubVerifyInfo").textContent = bad ? bad + " failed" : "All " + exps.length + " passed"; renderPublish(); return bad === 0;
   }
   $("pubVerify").addEventListener("click", verifyAll);
@@ -242,7 +251,8 @@
   let sb = null, account = { state: "checking" }, liveSnap = null, liveError = "", publishing = false;
   function client() { if (sb) return sb; if (location.protocol === "file:" || !window.supabase || !window.supabase.createClient) return null; sb = window.supabase.createClient(SB_URL, SB_KEY, { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: false } }); return sb; }
   const SECTIONS = [["labs", "Labs"], ["experiments", "Experiments"], ["papers", "Papers"]];
-  const sectionState = (local, remote) => SECTIONS.map(([key, label]) => { const a = local[key], b = remote ? (remote[key] || []) : null; return { label, count: a.length, liveCount: b ? b.length : 0, same: remote ? stable(a) === stable(b) : false }; });
+  const noScript = list => list.map(x => { if (x && typeof x === "object" && "script" in x) { const { script, tests, ...rest } = x; return rest; } return x; });
+  const sectionState = (local, remote) => SECTIONS.map(([key, label]) => { const a = noScript(local[key]), b = remote ? noScript(remote[key] || []) : null; return { label, count: a.length, liveCount: b ? b.length : 0, same: remote ? stable(a) === stable(b) : false }; });
   const inSync = () => !!(liveSnap && liveSnap.snapshot && sectionState(buildSnapshot(), liveSnap.snapshot).every(r => r.same));
   function setChip(t, c) { const n = $("edPubChip"); n.textContent = t; n.className = "ed-chip " + (c || ""); }
   function updateChip() { if (liveError && !liveSnap) setChip("Live site unreachable", "bad"); else if (!liveSnap) setChip("Not published yet", "warn"); else if (inSync()) setChip("● Live site in sync (v" + liveSnap.version + ")", "ok"); else setChip("● Unpublished changes", "warn"); if (!$("edPublish").hidden) renderPublish(); }
@@ -289,12 +299,32 @@
   async function publish() {
     if (publishing || account.state !== "editor" || problems().out.length) return;
     say("pubMessage", "Test-running every experiment…"); if (!(await verifyAll())) return say("pubMessage", "Some experiments failed their test run. Fix them first.", true);
-    const snap = buildSnapshot(), bytes = new Blob([JSON.stringify(snap)]).size; if (bytes > 5800000) return say("pubMessage", "Too large to publish (over 5.8 MB).", true);
+    const snap = buildSnapshot(), bytes = new Blob([JSON.stringify(snap)]).size; if (bytes > 18 * 1048576) return say("pubMessage", "Too large to publish in one go (over 18 MB). Publish fewer experiments at a time.", true);
     if (!confirm("Publish to everyone?\n\n" + snap.labs.length + " lab(s), " + snap.experiments.length + " experiment(s) and " + snap.papers.length + " paper(s) will be visible on every device.")) return say("pubMessage", "");
     publishing = true; renderPublish(); say("pubMessage", "Publishing…");
     const { data, error } = await client().rpc("rp_publish_labs", { p_snapshot: snap, p_note: $("pubNote").value.trim() }); publishing = false;
     if (error) { say("pubMessage", explain(error), true); renderPublish(); return; }
-    $("pubNote").value = ""; say("pubMessage", "Published as version " + data + ". Visitors will see it within about a minute."); await fetchLive(); loadHistory();
+    $("pubNote").value = ""; say("pubMessage", "Published as version " + data + ". Training the starting results…");
+    const trained = await trainDefaults(snap); say("pubMessage", "Published as version " + data + ". Visitors will see it within about a minute." + (trained.n ? " Trained " + trained.n + " starting result(s)." : "") + (trained.error ? " Could not train some results: " + trained.error : "")); await fetchLive(); loadHistory();
+  }
+  /* Visitors only get results that were trained. Every published experiment is trained at its start values, and every paper figure at its figure values. */
+  async function trainDefaults(snap) {
+    const L = window.RPLabs, items = []; let error = "";
+    try {
+      for (const x of snap.experiments) {
+        const v = verify[x.id], defs = {}; (x.params || []).forEach(p => { defs[p.key] = p.default; });
+        let result = v && v.script === (list("exps").find(y => y.id === x.id) || {}).script && v.result ? v.result : null;
+        if (!result) { const r = await L.run((list("exps").find(y => y.id === x.id) || {}).script, defs, { timeoutMs: timeoutMs() }); if (r.ok) result = r.result; }
+        if (result) items.push({ kind: "exp", key: L.expKey(x, defs), data: result });
+      }
+      for (const p of snap.papers) {
+        if (!p.figure) continue; const x = snap.experiments.find(y => y.id === p.figure.experiment), src = list("exps").find(y => y.id === p.figure.experiment); if (!x || !src) continue;
+        const params = { ...Object.fromEntries((x.params || []).map(q => [q.key, q.default])), ...(p.figure.params || {}) }, key = L.expKey(x, params); if (items.some(i => i.key === key)) continue;
+        const r = await L.run(src.script, params, { timeoutMs: timeoutMs() }); if (r.ok) items.push({ kind: "exp", key, data: r.result });
+      }
+      for (let i = 0; i < items.length; i += 25) { const { error: e } = await client().rpc("rp_labs_train_many", { p_items: items.slice(i, i + 25) }); if (e) throw e; }
+    } catch (e) { error = e.message || String(e); }
+    return { n: error ? 0 : items.length, error };
   }
   async function republish(version) {
     if (!confirm("Make version " + version + " the live version again?")) return;
@@ -306,5 +336,10 @@
   document.addEventListener("visibilitychange", () => { if (!document.hidden) refreshPublish(); });
 
   function refreshAll() { fillLabSelects(); fillFigExps($("edFigExp").value); renderLabList(); renderExpList(); renderPaperList(); renderDashboard(); updateChip(); }
-  resetLab(); refreshAll(); resetExp(); resetPaper(); showView("dashboard"); refreshPublish();
+  /* tests stored with each experiment (custom checks); the editor for them lives in labs-employee-extra.js */
+  let testsApi = { collect: () => [], set: () => {} };
+  const collectTests = () => testsApi.collect(), setTests = t => testsApi.set(t);
+  const cleanTests = t => (Array.isArray(t) ? t : []).slice(0, 50).map(a => ({ at: ["defaults", "min", "max", "current"].includes(a.at) ? a.at : "defaults", metric: str(String(a.metric || ""), 40), op: [">=", "<=", "between", "approx", "returns"].includes(a.op) ? a.op : ">=", value: num(a.value, 0), value2: num(a.value2, 0) })).filter(a => a.metric);
+  window.RPLabsEd = { $, list, save, make, btn, say, when, str, num, stable, cleanParams, collectParams, sliderVals, showView, onShow, coder, buildSnapshot, timeoutMs, client, setTestsApi: api => { testsApi = api; }, getAccount: () => account, setSettings: v => { labSettings = v; if (window.RPLabs) window.RPLabs.LIMITS.timeoutMs = timeoutMs(); }, explain, renderResult, testRun, expKey: (x, p) => window.RPLabs.expKey(x, p) };
+  resetLab(); refreshAll(); resetExp(); resetPaper(); showView(/^#(inbox|training|settings|publish)$/.test(location.hash) ? location.hash.slice(1) : "dashboard"); refreshPublish();
 })();
