@@ -958,14 +958,38 @@ footer{text-align:center;color:var(--muted);font-size:.8rem;padding:24px 10px 40
 </div><!-- /#scienceLabApp -->
 
 <div id="toast"></div>
+<script src="labs-server.js"></script>
 <script>
 const APPLICATION_SOURCE = "<!DOCTYPE html>\n" + document.documentElement.outerHTML;
 /* ============================================================
    STATE
    ============================================================ */
 let money = 50;
+let freshState = true;
 let inventory = { test_tube: 2, water: 3 };
-const MAX_SELECTION = 4;
+let MAX_SELECTION = 4;
+/* ---- who is looking? Visitors can only ASK the server what a combination does; Labs employees can teach it. ---- */
+const RPS = window.RPLabsServer;
+let LAB_SETTINGS = RPS.DEFAULTS, IS_EDITOR = false;
+const escHtml = v => String(v == null ? "" : v).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]));
+async function discover(kind, key, label, store){
+  if(IS_EDITOR && store[key]) return { data: store[key] };
+  const r = await RPS.lookup(kind, key, label);
+  if(r.found && r.data){ store[key] = r.data; return { data: r.data }; }
+  return { data: null, info: r };
+}
+function notDiscoveredHtml(info){
+  if(info && info.error) return `<strong>⚠️ Could not reach the lab</strong><br>${escHtml(info.error)} Try again in a moment.`;
+  if(info && info.closed) return `<strong>🔒 The labs are closed</strong><br>The Labs team has closed the labs for now. Please come back later.`;
+  if(info && info.guest) return `<strong>❔ Not discovered yet</strong><br>${escHtml(LAB_SETTINGS.guest_text)}`;
+  if(info && info.limited) return `<strong>❔ Not discovered yet</strong><br>You have tried a lot of new combinations today. Come back tomorrow.`;
+  return `<strong>❔ Not discovered yet</strong><br>${escHtml(LAB_SETTINGS.not_discovered_text)}`;
+}
+function unitPrice(item){ return Math.max(0, Math.round((Number(item.price)||0) * (Number(LAB_SETTINGS.price_multiplier)||1) * 100) / 100); }
+async function pushTraining(kind, key, entry){
+  if(!IS_EDITOR){ showToast("Only Labs employees can teach the lab."); return false; }
+  try{ await RPS.train(kind, key, entry); return true; }catch(e){ showToast("Could not save to the server: " + e.message); return false; }
+}
 let selectedItems = [];
 let pendingDiscoveryKey = null;
 let pendingDiscoveryNames = "";
@@ -1454,8 +1478,13 @@ function setupCodeExport(){
   document.getElementById("confirmTrainingImport").addEventListener("click",()=>{
     if(!pendingTrainingImport)return;
     const current=localStorage.getItem(STORAGE_KEY);if(current){try{JSON.parse(current);try{localStorage.setItem(`${STORAGE_KEY}_recovery`,current);}catch(e){}}catch(e){}}
-    localStorage.setItem(STORAGE_KEY,JSON.stringify(pendingTrainingImport));
-    location.reload();
+    const imp=pendingTrainingImport, items=[];
+    Object.entries(imp.customReactions||{}).forEach(([key,data])=>items.push({kind:"lab",key,data}));
+    Object.entries(imp.timeDiscoveries||{}).forEach(([key,data])=>items.push({kind:"time",key,data}));
+    Object.entries(imp.physicsDiscoveries||{}).forEach(([key,data])=>items.push({kind:"physics",key,data}));
+    const finish=()=>{localStorage.setItem(STORAGE_KEY,JSON.stringify({...imp,customReactions:{},timeDiscoveries:{},physicsDiscoveries:{}}));location.reload();};
+    if(!items.length||!IS_EDITOR)return finish();
+    (async()=>{try{for(let i=0;i<items.length;i+=100)await RPS.trainMany(items.slice(i,i+100));showToast(`Sent ${items.length} trained results to the server.`);finish();}catch(e){showToast("Server refused the import: "+e.message);}})();
   });
 }
 
@@ -1528,7 +1557,7 @@ function runExperiment(){
   }, 900);
 }
 
-function revealExperimentResult(){
+async function revealExperimentResult(){
   const resultBox = document.getElementById("resultBox");
   const discoveryPanel = document.getElementById("discoveryPanel");
   discoveryPanel.style.display = "none";
@@ -1545,8 +1574,18 @@ function revealExperimentResult(){
   const historyBefore=captureLabSnapshot();
 
   const key = [...selectedItems].sort().join("+");
-  const reaction = customReactions[key];
   const inputNames = selectedItems.map(id => ITEMS[id]?.name || id);
+  const found = await discover("lab", key, inputNames.join(" + "), customReactions);
+  const reaction = found.data;
+  if(!reaction && !IS_EDITOR){
+    recordExperiment("Lab", inputNames, "Not discovered yet.", key, false, {inputMaterialIds:[...selectedItems]});
+    resultBox.classList.add("warn");
+    resultBox.innerHTML = notDiscoveredHtml(found.info) + `<br><small>Nothing was used up.</small>`;
+    selectedItems = [];
+    renderInventory();
+    saveState();
+    return;
+  }
   const inputQuantities=selectedItems.reduce((counts,id)=>(counts[id]=(counts[id]||0)+1,counts),{});
   const labRecord=recordExperiment("Lab", inputNames, reaction ? `${reaction.title || "Saved discovery"}: ${reaction.text || ""}` : "No trained result for this combination.", key, !!reaction,{inputMaterialIds:[...selectedItems],inputQuantities});
   consumeItems(selectedItems);
@@ -1575,7 +1614,7 @@ function revealExperimentResult(){
   } else {
     resultBox.classList.add("warn");
     const names = selectedItems.map(id => ITEMS[id].name).join(" + ");
-    resultBox.innerHTML = `<strong>❔ Unknown Combination</strong><br>You haven't taught the lab what happens when you mix ${names}.`;
+    resultBox.innerHTML = `<strong>❔ Not discovered yet</strong><br>Nothing is trained for ${escHtml(names)}. You are a Labs employee: teach it below and it becomes real for everyone.`;
     pendingDiscoveryKey = key;
     pendingDiscoveryNames = names;
     discoveryPanel.style.display = "block";
@@ -1637,7 +1676,7 @@ function addDiscoveryOutputRow(){
   container.appendChild(row);
 }
 
-function saveDiscovery(){
+async function saveDiscovery(){
   if(!pendingDiscoveryKey){ showToast("Nothing to save right now."); return; }
   const text = document.getElementById("discoveryText").value.trim();
   if(!text){ showToast("Please describe what you observed first."); return; }
@@ -1663,6 +1702,7 @@ function saveDiscovery(){
 
   const entry = { title: heading, text, outputs };
   if(situations.length > 0) entry.situations = situations;
+  if(!(await pushTraining("lab", pendingDiscoveryKey, entry))) return;
   customReactions[pendingDiscoveryKey] = entry;
   discoveryEvents.unshift({at:researchNow(),type:"Trained outcome changed",title:entry.title,detail:`Lab combination: ${pendingDiscoveryNames}`});
   recordExperiment("Lab", pendingDiscoveryNames, `${entry.title}: ${entry.text}`, pendingDiscoveryKey, true);
@@ -1735,9 +1775,9 @@ function buildStoreCard(id, item){
   const formulaHtml = item.formula && item.formula !== "-" ? `<div class="formula">${item.formula}</div>` : "";
   const customTag = item.custom ? `<span class="custom-tag">custom</span>` : "";
   const deleteBtn = item.custom ? `<button class="delete-btn" title="Delete">✖</button>` : "";
-  card.innerHTML = `${customTag}${deleteBtn}<span class="emoji">${item.emoji}</span><div class="name">${item.name}</div>${formulaHtml}<span class="state-badge">${item.state}</span><div class="price">$${item.price} each</div><label class="quantity-control">Quantity<input class="buy-quantity" type="number" min="1" max="99" step="1" value="1" inputmode="numeric" aria-label="Quantity of ${item.name} to buy"></label><small class="quantity-total">Total: $${item.price}</small><button class="btn buy-btn">Buy quantity</button>`;
+  card.innerHTML = `${customTag}${deleteBtn}<span class="emoji">${item.emoji}</span><div class="name">${item.name}</div>${formulaHtml}<span class="state-badge">${item.state}</span><div class="price">$${unitPrice(item)} each</div><label class="quantity-control">Quantity<input class="buy-quantity" type="number" min="1" max="99" step="1" value="1" inputmode="numeric" aria-label="Quantity of ${item.name} to buy"></label><small class="quantity-total">Total: $${unitPrice(item)}</small><button class="btn buy-btn">Buy quantity</button>`;
   const quantityInput=card.querySelector(".buy-quantity"),totalLabel=card.querySelector(".quantity-total");
-  quantityInput.addEventListener("input",()=>{const quantity=Math.max(1,Math.min(99,Math.floor(Number(quantityInput.value)||1)));totalLabel.textContent=`Total: $${(item.price*quantity).toFixed(2)}`;});
+  quantityInput.addEventListener("input",()=>{const quantity=Math.max(1,Math.min(99,Math.floor(Number(quantityInput.value)||1)));totalLabel.textContent=`Total: $${(unitPrice(item)*quantity).toFixed(2)}`;});
   card.querySelector(".buy-btn").addEventListener("click", () => buyItem(id, quantityInput.value));
   const del = card.querySelector(".delete-btn");
   if(del) del.addEventListener("click", e => { e.stopPropagation(); deleteCustomItem(id); });
@@ -1798,7 +1838,7 @@ function buyItem(id, requestedQuantity=1){
   const item = ITEMS[id];
   const quantity=Math.floor(Number(requestedQuantity));
   if(!item||!Number.isFinite(quantity)||quantity<1||quantity>99){showToast("Choose a quantity from 1 to 99.");return;}
-  const total=item.price*quantity;
+  const total=unitPrice(item)*quantity;
   if(spendMoney(total)){
     inventory[id] = (inventory[id] || 0) + quantity;
     renderInventory();
@@ -1928,7 +1968,7 @@ function formatDuration(min){
   return `${Math.round(min/43200)} month(s)`;
 }
 
-function applyTimeSkip(){
+async function applyTimeSkip(){
   const select = document.getElementById("ttItemSelect");
   const id = select.value;
   const resultBox = document.getElementById("timeResultBox");
@@ -1948,7 +1988,14 @@ function applyTimeSkip(){
   const minutes = parseInt(document.getElementById("ttDuration").value, 10);
   const key = `${id}|${tempBand(tempC)}|${durationBand(minutes)}`;
   const label = `${item.name} at ${tempC}°C for ${formatDuration(minutes)}`;
-  const found = timeDiscoveries[key];
+  const looked = await discover("time", key, label, timeDiscoveries);
+  const found = looked.data;
+  if(!found && !IS_EDITOR){
+    recordExperiment("Time & Temp", label, "Not discovered yet.", key, false);
+    resultBox.classList.add("warn");
+    resultBox.innerHTML = notDiscoveredHtml(looked.info) + `<br><small>Nothing was used up.</small>`;
+    return;
+  }
   recordExperiment("Time & Temp", label, found ? `${found.title || "Saved discovery"}: ${found.text || ""}` : "No trained result for these conditions.", key, !!found);
 
   if(found){
@@ -1966,7 +2013,7 @@ function applyTimeSkip(){
     saveState();
   } else {
     resultBox.classList.add("warn");
-    resultBox.innerHTML = `<strong>❔ Unknown Outcome</strong><br>You haven't taught the lab what happens to ${label}.`;
+    resultBox.innerHTML = `<strong>❔ Not discovered yet</strong><br>Nothing is trained for ${escHtml(label)}. You are a Labs employee: teach it below.`;
     pendingTimeKey = key;
     pendingTimeLabel = label;
     discoveryPanel.style.display = "block";
@@ -1976,7 +2023,7 @@ function applyTimeSkip(){
   }
 }
 
-function saveTimeDiscovery(){
+async function saveTimeDiscovery(){
   if(!pendingTimeKey){ showToast("Nothing to save right now."); return; }
   const text = document.getElementById("timeDiscoveryText").value.trim();
   if(!text){ showToast("Please describe what you observed first."); return; }
@@ -1987,6 +2034,7 @@ function saveTimeDiscovery(){
   if(productName){
     entry.product = { name: productName, formula: "-", state: "aqueous", emoji: productEmoji };
   }
+  if(!(await pushTraining("time", pendingTimeKey, entry))) return;
   timeDiscoveries[pendingTimeKey] = entry;
   discoveryEvents.unshift({at:researchNow(),type:"Trained outcome changed",title:entry.title,detail:`Time & Temp: ${pendingTimeLabel}`});
   recordExperiment("Time & Temp", pendingTimeLabel, `${entry.title}: ${entry.text}`, pendingTimeKey, true);
@@ -2193,7 +2241,7 @@ function runPhysicsExperiment(){
   }, 850);
 }
 
-function revealPhysicsResult(force, angle, velocity){
+async function revealPhysicsResult(force, angle, velocity){
   const resultBox = document.getElementById("physicsResultBox");
   const discoveryPanel = document.getElementById("physicsDiscoveryPanel");
   discoveryPanel.style.display = "none";
@@ -2209,7 +2257,14 @@ function revealPhysicsResult(force, angle, velocity){
   const names = selectedPhysicsItems.map(id => ITEMS[id].name).join(" + ");
   const label = `${names} (${force} N, ${angle}°, ${voltage} V, ${frequency} Hz, ${mass} kg, ${velocity} m/s)`;
 
-  const found = physicsDiscoveries[key];
+  const looked = await discover("physics", key, label, physicsDiscoveries);
+  const found = looked.data;
+  if(!found && !IS_EDITOR){
+    recordExperiment("Physics Lab", label, "Not discovered yet.", key, false);
+    resultBox.classList.add("warn");
+    resultBox.innerHTML = notDiscoveredHtml(looked.info);
+    return;
+  }
   recordExperiment("Physics Lab", label, found ? `${found.title || "Saved discovery"}: ${found.text || ""}` : "No trained result for these conditions.", key, !!found);
 
   if(found){
@@ -2222,7 +2277,7 @@ function revealPhysicsResult(force, angle, velocity){
     saveState();
   } else {
     resultBox.classList.add("warn");
-    resultBox.innerHTML = `<strong>❔ Unknown Outcome</strong><br>You haven't taught the lab what happens with ${label}.`;
+    resultBox.innerHTML = `<strong>❔ Not discovered yet</strong><br>Nothing is trained for ${escHtml(label)}. You are a Labs employee: teach it below.`;
     pendingPhysicsKey = key;
     pendingPhysicsLabel = label;
     discoveryPanel.style.display = "block";
@@ -2234,7 +2289,7 @@ function revealPhysicsResult(force, angle, velocity){
   }
 }
 
-function savePhysicsDiscovery(){
+async function savePhysicsDiscovery(){
   if(!pendingPhysicsKey){ showToast("Nothing to save right now."); return; }
   const text = document.getElementById("physicsDiscoveryText").value.trim();
   if(!text){ showToast("Please describe what you observed first."); return; }
@@ -2248,6 +2303,7 @@ function savePhysicsDiscovery(){
   if(productName){
     entry.product = { name: productName, formula: "-", state: "solid", emoji: productEmoji };
   }
+  if(!(await pushTraining("physics", pendingPhysicsKey, entry))) return;
   physicsDiscoveries[pendingPhysicsKey] = entry;
   discoveryEvents.unshift({at:researchNow(),type:"Trained outcome changed",title:entry.title,detail:`Physics Lab: ${pendingPhysicsLabel}`});
   recordExperiment("Physics Lab", pendingPhysicsLabel, `${entry.title}: ${entry.text}`, pendingPhysicsKey, true);
@@ -2499,8 +2555,8 @@ function selectAnswer(qi, oi){
 function finishQuiz(){
   const correctCount = answeredCorrectly.filter(v => v === true).length;
   let reward = 0, message = "";
-  if(correctCount === 2){ reward = 25; message = "🎉 Both correct!"; }
-  else if(correctCount === 1){ reward = 10; message = "👍 One correct!"; }
+  if(correctCount === 2){ reward = Number(LAB_SETTINGS.quiz_reward_both)||0; message = "🎉 Both correct!"; }
+  else if(correctCount === 1){ reward = Number(LAB_SETTINGS.quiz_reward_one)||0; message = "👍 One correct!"; }
   else { reward = 0; message = "😅 Both wrong."; }
   if(reward > 0) addMoney(reward);
   saveState();
@@ -2997,12 +3053,22 @@ function printResearchPaper(){
    ============================================================ */
 const STORAGE_KEY = "virtual_science_lab_state_v2";
 
+/* Results taught on this device before the server existed stay in storage until a Labs employee has sent them to the server. Visitors' copies are dropped. */
+function keepLocalTraining(){
+  try{
+    if(IS_EDITOR && !localStorage.getItem("rpLabsLocalTrainingMoved.v1")){
+      const raw = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}") || {};
+      return { customReactions: raw.customReactions||{}, timeDiscoveries: raw.timeDiscoveries||{}, physicsDiscoveries: raw.physicsDiscoveries||{} };
+    }
+  }catch(e){}
+  return { customReactions: {}, timeDiscoveries: {}, physicsDiscoveries: {} };
+}
 function saveState(){
   try{
     const customItems = {}; customItemIds.forEach(id => { if(ITEMS[id]) customItems[id] = ITEMS[id]; });
     const productItems = {}; productItemIds.forEach(id => { if(ITEMS[id]) productItems[id] = ITEMS[id]; });
     const serialized=JSON.stringify({
-      money, inventory, customItems, customItemIds, productItems, productItemIds, customReactions, timeDiscoveries, physicsDiscoveries,
+      money, inventory, customItems, customItemIds, productItems, productItemIds, ...keepLocalTraining(),
       schemaVersion:5, researchPapers, researchProjects, experimentLog, researchAudit, experimentProtocols, evidenceEntries, experimentQueue, trackedSamples, calibrationRecords, discoveryEvents, libraryDocuments
     });
     const previous=localStorage.getItem(STORAGE_KEY);
@@ -3034,9 +3100,7 @@ function loadState(){
     if(Array.isArray(s.customItemIds)) customItemIds = s.customItemIds;
     if(s.productItems) Object.keys(s.productItems).forEach(id => { ITEMS[id] = s.productItems[id]; });
     if(Array.isArray(s.productItemIds)) productItemIds = s.productItemIds;
-    if(s.customReactions) customReactions = s.customReactions;
-    if(s.timeDiscoveries) timeDiscoveries = s.timeDiscoveries;
-    if(s.physicsDiscoveries) physicsDiscoveries = s.physicsDiscoveries;
+    freshState = false; /* results taught on this device in the past no longer count: only the server's trained results do */
     if(Array.isArray(s.researchPapers)) researchPapers = s.researchPapers;
     if(Array.isArray(s.researchProjects)) researchProjects = s.researchProjects;
     if(Array.isArray(s.experimentLog)) experimentLog = s.experimentLog;
@@ -3054,8 +3118,66 @@ function loadState(){
 
 
 
+/* Apply the Labs team's settings, and switch on employee tools for Labs employees. */
+async function startLabsSession(){
+  const [settings, editor] = await Promise.all([RPS.settings(true), RPS.isEditor()]);
+  LAB_SETTINGS = settings; IS_EDITOR = editor;
+  MAX_SELECTION = Math.min(8, Math.max(2, Number(settings.max_selection) || 4));
+  if(freshState){ money = Math.max(0, Number(settings.starting_money)); if(!Number.isFinite(money)) money = 50; updateMoneyDisplay(); }
+  renderStore();
+  // banner
+  const old = document.getElementById("labsBanner"); if(old) old.remove();
+  if(settings.banner){
+    const tone = { info:"#2ee6e6", good:"#34d399", warn:"#fbbf24", bad:"#f87171" }[settings.banner_tone] || "#2ee6e6";
+    const b = document.createElement("div"); b.id = "labsBanner"; b.setAttribute("role","status"); b.textContent = settings.banner;
+    b.style.cssText = `margin:10px 16px;padding:10px 14px;border-radius:10px;border:1px solid ${tone};color:${tone};background:rgba(255,255,255,.04);font-size:14px`;
+    const nav = document.querySelector("nav"); if(nav) nav.after(b);
+  }
+  // tabs the team switched off (employees always see everything)
+  if(!editor) Object.entries(settings.tabs || {}).forEach(([tab, on]) => { if(on === false){ const btn = document.querySelector(`.tab-btn[data-tab="${tab}"]`); if(btn) btn.style.display = "none"; } });
+  // the CODE tab and its HTML export are for employees only
+  if(!editor){
+    document.querySelector('.tab-btn[data-tab="code"]')?.remove();
+    document.getElementById("code")?.remove();
+  }
+  // closed for visitors
+  if(!editor && settings.labs_open === false){
+    document.getElementById("scienceLabApp").innerHTML = `<div style="padding:60px 20px;text-align:center"><h2>🔒 The labs are closed</h2><p class="research-meta">${escHtml(settings.banner || "The Labs team has closed the labs for now. Please come back later.")}</p><p><a class="btn secondary" href="../index/index.html">← Branches</a></p></div>`;
+    return;
+  }
+  // make sure a visible tab is selected
+  const active = document.querySelector(".tab-btn.active");
+  if(active && active.style.display === "none"){ const first = [...document.querySelectorAll(".tab-btn")].find(b => b.style.display !== "none"); if(first) first.click(); }
+  if(editor){
+    // employees can see (and edit) everything that is trained
+    try{
+      const all = await RPS.exportAll();
+      (all || []).forEach(t => { if(t.kind === "lab") customReactions[t.key] = t.data; else if(t.kind === "time") timeDiscoveries[t.key] = t.data; else if(t.kind === "physics") physicsDiscoveries[t.key] = t.data; });
+      Object.values(customReactions).concat(Object.values(timeDiscoveries), Object.values(physicsDiscoveries)).forEach(r => { if(r && r.product && r.product.name){ /* products only appear when earned */ } });
+    }catch(e){ showToast("Could not load trained results: " + e.message); }
+    // results taught on this device before the server existed: offer to move them to the server once
+    try{
+      const raw = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}") || {}, flag = "rpLabsLocalTrainingMoved.v1", items = [];
+      Object.entries(raw.customReactions||{}).forEach(([key,data])=>{ if(!customReactions[key]) items.push({kind:"lab",key,data}); });
+      Object.entries(raw.timeDiscoveries||{}).forEach(([key,data])=>{ if(!timeDiscoveries[key]) items.push({kind:"time",key,data}); });
+      Object.entries(raw.physicsDiscoveries||{}).forEach(([key,data])=>{ if(!physicsDiscoveries[key]) items.push({kind:"physics",key,data}); });
+      if(items.length && !localStorage.getItem(flag) && confirm(`This browser holds ${items.length} result(s) you taught the lab before. Send them to the server so every visitor gets them?`)){
+        for(let i=0;i<items.length;i+=50) await RPS.trainMany(items.slice(i,i+50));
+        items.forEach(t => { (t.kind==="lab"?customReactions:t.kind==="time"?timeDiscoveries:physicsDiscoveries)[t.key] = t.data; });
+        localStorage.setItem(flag, "1"); showToast(`Sent ${items.length} result(s) to the server.`);
+      }
+    }catch(e){ showToast("Could not send your old results: " + e.message); }
+    const m = location.hash.match(/^#train=lab:(.+)$/);
+    if(m){ // opened from the inbox: put the combination on the bench
+      const ids = decodeURIComponent(m[1]).split("+").filter(id => ITEMS[id]);
+      if(ids.length >= 2){ ids.forEach(id => { if(!inventory[id]) inventory[id] = 1; }); selectedItems = ids.slice(0, MAX_SELECTION); renderInventory(); showToast("Combination loaded. Press Run, then teach the result."); }
+    }
+  }
+}
+
 window.addEventListener("DOMContentLoaded", () => {
   loadState();
+  startLabsSession();
   updateMoneyDisplay();
   renderInventory();
   renderStore();
